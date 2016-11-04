@@ -15,7 +15,12 @@ public class Servidor {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        System.out.println("Server");
+        System.out.println("Ola");
+        System.out.println("Ola");
+        System.out.println("Ola");
+        System.out.println("Ola");
+        System.out.println("Ola");
+        System.out.println("Ola");
     }
     
 }
