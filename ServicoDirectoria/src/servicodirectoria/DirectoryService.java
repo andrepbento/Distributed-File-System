@@ -118,7 +118,7 @@ public class DirectoryService extends Thread{
                         if(!serverExists(nome)) {
                             Server_Registry sr = new Server_Registry(nome, ip, porto);
                             activeServers.add(new Server_Registry(nome, ip, porto));
-                            ListenerThread mt = new ListenerThread(ip, porto);
+                            //ListenerThread mt = new ListenerThread(ip, porto);
                         }
                         
                         break;
