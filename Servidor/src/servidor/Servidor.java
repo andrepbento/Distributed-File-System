@@ -5,22 +5,22 @@
  */
 package servidor;
 
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
 /**
  *
  * @author Luis
  */
 public class Servidor {
 
-    /**
-     * @param args the command line arguments
-     */
+    public static final int MAX_SIZE = 10000;
+    
+    private DatagramSocket socket;
+    private DatagramPacket packet; //para receber os pedidos e enviar as respostas
+    
     public static void main(String[] args) {
-        System.out.println("Ola");
-        System.out.println("Ola");
-        System.out.println("Ola");
-        System.out.println("Ola");
-        System.out.println("Ola");
-        System.out.println("Ola");
+
     }
     
 }
