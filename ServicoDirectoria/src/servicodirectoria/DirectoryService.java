@@ -40,13 +40,9 @@ public class DirectoryService extends Thread{
         activeServers = new ArrayList<>();
     }
 
-    public List<Server_Registry> getActiveServers() {
-        synchronized(activeServers) {
+    public synchronized List<Server_Registry> getActiveServers() {
             return activeServers;
-        }
     }
-    
-    
     
     public String waitDatagram() throws IOException
     {
@@ -118,6 +114,7 @@ public class DirectoryService extends Thread{
                         if(!serverExists(nome)) {
                             Server_Registry sr = new Server_Registry(nome, ip, porto);
                             activeServers.add(new Server_Registry(nome, ip, porto));
+                            System.out.println("Ligou-se o servidor: " + ip + " porto: " + porto);
                             //ListenerThread mt = new ListenerThread(ip, porto);
                         }
                         
