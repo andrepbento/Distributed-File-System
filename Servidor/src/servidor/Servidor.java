@@ -18,15 +18,16 @@ import java.net.SocketException;
 public class Servidor {
     
     public static final int MAX_SIZE = 256;
-    
+    String nome;
     private DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
     InetAddress ip;
    
 
 
-    public Servidor(InetAddress ip, int listeningPort) throws SocketException 
+    public Servidor(String nome, InetAddress ip, int listeningPort) throws SocketException 
     {
+        this.nome = nome;
         socket = null;
         packet = null;
         socket = new DatagramSocket();
@@ -70,17 +71,19 @@ public class Servidor {
         InetAddress ip;
         int porto;
         Servidor servidor = null;
+        String nome;
         
-        if(args.length != 1){
-            System.out.println("Sintaxe: java Servidor ip listeningPort");
+        if(args.length != 3){
+            System.out.println("Sintaxe: java Servidor Nome ip listeningPort");
             return;
         }
         
         try{
-            ip = InetAddress.getByName(args[0]);
-            porto = Integer.parseInt(args[1]);
+            nome = args[0];
+            ip = InetAddress.getByName(args[1]);
+            porto = Integer.parseInt(args[2]);
             
-            servidor = new Servidor(ip, porto); 
+            servidor = new Servidor(nome, ip, porto); 
             new HeartbeatThreadSend(ip, porto).start();
             
         }catch(NumberFormatException e){
