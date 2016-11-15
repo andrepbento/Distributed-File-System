@@ -67,24 +67,29 @@ public class Servidor {
         }
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         InetAddress ip;
         int porto;
         Servidor servidor = null;
-        String nome;
+        String serverName;
         
-        if(args.length != 3){
+        if(args.length != 4){
             System.out.println("Sintaxe: java Servidor Nome ip listeningPort");
             return;
         }
         
         try{
-            nome = args[0];
-            ip = InetAddress.getByName(args[1]);
-            porto = Integer.parseInt(args[2]);
+            serverName = args[1];
+            ip = InetAddress.getByName(args[2]);
+            porto = Integer.parseInt(args[3]);
             
-            servidor = new Servidor(nome, ip, porto); 
+            servidor = new Servidor(serverName, ip, porto); 
             new HeartbeatThreadSend(ip, porto).start();
+            
+            while(true) {
+                System.out.printf("z");
+                Thread.sleep(1000);
+            }
             
         }catch(NumberFormatException e){
             System.out.println("O porto de escuta deve ser um inteiro positivo.");

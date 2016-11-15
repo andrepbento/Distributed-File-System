@@ -39,15 +39,15 @@ public class HeartbeatThreadSend extends Thread{
         
         while(true){
             try {
-                Thread.sleep(TIME);
+                //Thread.sleep(TIME);
 
                 //O ip e porto de destino ja' se encontram definidos em packet
                 socketSend.send(packetSend);
 
             } catch (IOException ex) {
                 Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (InterruptedException ex) {
-            Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);
+            //} catch (InterruptedException ex) {
+                //Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);
         }
             
         }
