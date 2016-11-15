@@ -47,18 +47,16 @@ public class DirectoryService extends Thread{
     public String waitDatagram() throws IOException
     {
         String request;
-        ObjectInputStream in;
         
         if(socket == null){
             return null;
         }
         
         socket.receive(packet);
-        in = new ObjectInputStream(new ByteArrayInputStream(packet.getData()));
 
         try{
-            request = (String)(in.readObject());
-        }catch(ClassCastException | ClassNotFoundException e){
+            request = new String(packet.getData());
+        }catch(ClassCastException e){
              System.out.println("Recebido objecto diferente de String " + 
                     packet.getAddress().getHostAddress() + ":" + packet.getPort());
             return null;
@@ -103,17 +101,16 @@ public class DirectoryService extends Thread{
                 String []comando= receivedMsg.split(" ");
                 InetAddress ip;
                 int porto;
-                String nome;
+                String name;
                                 
                 switch(comando[0].toUpperCase()){
                     case "SERVIDOR": 
-                        nome = comando[1];
+                        name = comando[1];
                         ip = InetAddress.getByName(comando[2]);
                         porto = Integer.parseInt(comando[3]);
                         
-                        if(!serverExists(nome)) {
-                            Server_Registry sr = new Server_Registry(nome, ip, porto);
-                            activeServers.add(new Server_Registry(nome, ip, porto));
+                        if(!serverExists(name)) {
+                            activeServers.add(new Server_Registry(name, ip, porto));
                             System.out.println("Ligou-se o servidor: " + ip + " porto: " + porto);
                             //ListenerThread mt = new ListenerThread(ip, porto);
                         }
