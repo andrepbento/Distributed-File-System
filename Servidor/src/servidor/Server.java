@@ -54,7 +54,7 @@ public class Server implements Constantes{
     }*/
     
     public void sendRegister() throws IOException{
-        String msg = "SERVIDOR " + this.name + " " + this.ip.getHostAddress() + " " + this.listeningPort + " ";
+        String msg = "SERVIDOR " + this.name + " ";
         packet = new DatagramPacket(msg.getBytes(), msg.length(), ip, listeningPort);
         socket.send(packet);
     }

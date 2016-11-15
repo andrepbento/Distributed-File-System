@@ -30,7 +30,7 @@ public class DirectoryService extends Thread implements Constantes{
     public DirectoryService(int listeningPort) throws SocketException
     {
         socket = null;
-        packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);        
+        packet = null;       
         socket = new DatagramSocket(listeningPort);
         activeServers = new ArrayList<>();
     }
@@ -47,6 +47,7 @@ public class DirectoryService extends Thread implements Constantes{
             return null;
         }
         
+        packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
         socket.receive(packet);
 
         try{
@@ -101,8 +102,8 @@ public class DirectoryService extends Thread implements Constantes{
                 switch(comando[0].toUpperCase()){
                     case "SERVIDOR": 
                         name = comando[1];
-                        ip = InetAddress.getByName(comando[2]);
-                        porto = Integer.parseInt(comando[3]);
+                        ip = packet.getAddress();
+                        porto = packet.getPort();
                         
                         if(!serverExists(name)) {
                             activeServers.add(new Server_Registry(name, ip, porto));
@@ -114,9 +115,10 @@ public class DirectoryService extends Thread implements Constantes{
                         
                         break;
                     default: 
-                        throw new Exception("Command failure(incorrect size or command)");
+                        continue;
                 }
                 
+                /*
                 bOut = new ByteArrayOutputStream(MAX_SIZE);            
                 out = new ObjectOutputStream(bOut);
 
@@ -125,7 +127,8 @@ public class DirectoryService extends Thread implements Constantes{
 
                 System.out.println("Tamanho da resposta serializada: "+bOut.size());
                 //O ip e porto de destino já se encontram definidos em packet
-                socket.send(packet);
+                //socket.send(packet);
+                */
                 
             }catch(IOException e){
                 System.out.println(e);

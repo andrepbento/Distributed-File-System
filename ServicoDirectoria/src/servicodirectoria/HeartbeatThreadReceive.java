@@ -33,9 +33,8 @@ public class HeartbeatThreadReceive extends Thread implements Constantes{
         if(socketReceive == null){
                 return;
         }
-        
+                
         new CheckIfServerIsOn().start();
-        
         while(true){
             try {
                 packetReceive = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
@@ -71,7 +70,8 @@ public class HeartbeatThreadReceive extends Thread implements Constantes{
                 
                 System.out.print("Servidores ligados:  ");
                 for(Server_Registry sr : activeServers)
-                        System.out.println(sr.getIp().getHostAddress() + "   ");
+                        System.out.print(sr.getIp().toString()+ "   ");
+                System.out.println("");
                 
                 } catch(InterruptedException e) {
                     e.printStackTrace();
