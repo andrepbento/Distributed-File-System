@@ -3,14 +3,16 @@ package servicodirectoria;
 import java.net.InetAddress;
 
 public class Server_Registry {
-    String nome;
-    InetAddress ip;
-    int porto;
+    private String nome;
+    private InetAddress ip;
+    private int porto;
+    private boolean log;
 
     public Server_Registry(String nome, InetAddress ip, int porto) {
         this.nome = nome;
         this.ip = ip;
         this.porto = porto;
+        this.log = true;
     }
 
     public String getNome() {
@@ -36,7 +38,13 @@ public class Server_Registry {
     public void setPorto(int porto) {
         this.porto = porto;
     }
-    
-    
+
+    public boolean getLog() {
+        return log;
+    }
+
+    public void setLog(boolean log) {
+        this.log = log;
+    }  
     
 }

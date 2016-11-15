@@ -9,7 +9,7 @@ package cliente;
  *
  * @author Jorge
  */
-public class Cliente {
+public class Client {
 
     /**
      * @param args the command line arguments

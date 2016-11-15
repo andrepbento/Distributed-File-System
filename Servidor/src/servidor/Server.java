@@ -15,23 +15,21 @@ import java.net.SocketException;
  *
  * @author Luis
  */
-public class Servidor {
-    
-    public static final int MAX_SIZE = 256;
-    String nome;
+public class Server implements Constantes{
+    private String name;
     private DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
-    InetAddress ip;
-   
-
-
-    public Servidor(String nome, InetAddress ip, int listeningPort) throws SocketException 
+    private InetAddress ip;
+    private int listeningPort;
+    
+    public Server(String name, InetAddress ip, int listeningPort) throws SocketException 
     {
-        this.nome = nome;
+        this.name = name;
+        this.ip = ip;
+        this.listeningPort = listeningPort;
         socket = null;
         packet = null;
         socket = new DatagramSocket();
-        this.ip = ip;
     }
     
     /*public String waitDatagram() throws IOException
@@ -55,9 +53,10 @@ public class Servidor {
     
     }*/
     
-    public void processHeartBeat() throws IOException, InterruptedException
-    {      
-        
+    public void sendRegister() throws IOException{
+        String msg = "SERVIDOR " + this.name + " " + this.ip.getHostAddress() + " " + this.listeningPort + " ";
+        packet = new DatagramPacket(msg.getBytes(), msg.length(), ip, listeningPort);
+        socket.send(packet);
     }
     
     public void closeSocket()
@@ -70,7 +69,7 @@ public class Servidor {
     public static void main(String[] args) throws InterruptedException {
         InetAddress ip;
         int porto;
-        Servidor servidor = null;
+        Server servidor = null;
         String serverName;
         
         if(args.length != 4){
@@ -83,8 +82,9 @@ public class Servidor {
             ip = InetAddress.getByName(args[2]);
             porto = Integer.parseInt(args[3]);
             
-            servidor = new Servidor(serverName, ip, porto); 
-            new HeartbeatThreadSend(ip, porto).start();
+            servidor = new Server(serverName, ip, porto); 
+            servidor.sendRegister();
+            new HeartbeatThreadSend(ip).start();
             
             while(true) {
                 System.out.printf("z");

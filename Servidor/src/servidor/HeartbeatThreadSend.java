@@ -17,39 +17,33 @@ import java.util.logging.Logger;
  *
  * @author Jorge
  */
-public class HeartbeatThreadSend extends Thread{
+public class HeartbeatThreadSend extends Thread implements Constantes{
     DatagramSocket socketSend;
     DatagramPacket packetSend;
-    public static final long TIME = 30000;
-    public static final String HEARTBEAT = "HEARTBEAT";
-    
 
-    public HeartbeatThreadSend(InetAddress ip, int sendingPort) throws SocketException{
+    public HeartbeatThreadSend(InetAddress ip) throws SocketException{
         socketSend = new DatagramSocket();
         packetSend = new DatagramPacket(HEARTBEAT.getBytes(),HEARTBEAT.length()
-                                        ,ip, sendingPort);
+                                        ,ip, SENDING_PORT);
     }
-    
     
     @Override
     public void run() {
-    if(socketSend == null){
-            return;
+        
+        if(socketSend == null){
+                return;
         }
         
         while(true){
             try {
-                //Thread.sleep(TIME);
-
-                //O ip e porto de destino ja' se encontram definidos em packet
                 socketSend.send(packetSend);
-
+                
+                Thread.sleep(TIME);
             } catch (IOException ex) {
                 Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);
-            //} catch (InterruptedException ex) {
-                //Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);
-        }
-            
+            } catch (InterruptedException ex) {
+                Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);
+            }  
         }
     }
     

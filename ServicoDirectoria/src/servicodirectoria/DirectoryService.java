@@ -22,14 +22,9 @@ import java.util.List;
  * @author andre
  */
 
-public class DirectoryService extends Thread{
-
-    public static final String TIME_REQUEST = "TIME";
-    public static final int MAX_SIZE = 10000;
-    
+public class DirectoryService extends Thread implements Constantes{
     private DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
-    
     private List<Server_Registry> activeServers;
 
     public DirectoryService(int listeningPort) throws SocketException
@@ -112,9 +107,8 @@ public class DirectoryService extends Thread{
                         if(!serverExists(name)) {
                             activeServers.add(new Server_Registry(name, ip, porto));
                             System.out.println("Ligou-se o servidor: " + ip + " porto: " + porto);
-                            //ListenerThread mt = new ListenerThread(ip, porto);
+                            new HeartbeatThreadReceive(activeServers).start();
                         }
-                        
                         break;
                     case "CLIENTE": 
                         

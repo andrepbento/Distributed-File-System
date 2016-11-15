@@ -5,38 +5,47 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class HeartbeatThreadReceive extends Thread {
-    DatagramSocket socketReceive;
-    DatagramPacket packetReceive;
-    public static final long TIME = 30000;
-    public static final int MAX_SIZE = 256;
-    public static final String HEARTBEAT = "HEARTBEAT";
+public class HeartbeatThreadReceive extends Thread implements Constantes{
+    private DatagramSocket socketReceive;
+    private DatagramPacket packetReceive;
+    protected List<Server_Registry> activeServers;
     
-
-    public HeartbeatThreadReceive(InetAddress ip, int receivingPort) throws SocketException{
-        socketReceive = new DatagramSocket(receivingPort);
+    public HeartbeatThreadReceive(List<Server_Registry> activeServers) throws SocketException{
+        socketReceive = new DatagramSocket(LISTENING_PORT);
         socketReceive.setSoTimeout(31000);
-        packetReceive =null;
+        packetReceive = null;
+        this.activeServers = activeServers;
     }
     
+    private void setServerLogOn(InetAddress serverIp) {
+        for(Server_Registry sr : activeServers)
+            if(sr.getIp().equals(serverIp))
+                sr.setLog(true);
+    }
     
     @Override
     public void run() {
-    if(socketReceive == null){
-            return;
-    }
+        
+        if(socketReceive == null){
+                return;
+        }
+        
+        new CheckIfServerIsOn().start();
         
         while(true){
             try {
                 packetReceive = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
-
-                //O ip e porto de destino ja' se encontram definidos em packet
                 socketReceive.receive(packetReceive);
                 
-
+                setServerLogOn(packetReceive.getAddress());
+                
+                // VERIFICAR SE EXISTE NA LISTA O IP DE ONDE FOI RECEBIDO O HB POSTERIORMENTE (HISTÓRICO)
+                
+                System.out.println("Recebi heartbeat de " + packetReceive.getAddress());
             } catch (IOException ex) {
                 Logger.getLogger(HeartbeatThreadReceive.class.getName()).log(Level.SEVERE, null, ex);
             } 
@@ -44,7 +53,35 @@ public class HeartbeatThreadReceive extends Thread {
         }
     }
     
-    
-    
+    class CheckIfServerIsOn extends Thread {
+
+        @Override
+        public void run() {
+            while(true) {
+                try {
+                Thread.sleep(TIME + 200);
+                
+                for(Server_Registry sr : activeServers)
+                    if(sr.getLog() == false)
+                        activeServers.remove(sr);
+                    else
+                        sr.setLog(false);
+                
+                // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
+                
+                System.out.print("Servidores ligados:  ");
+                for(Server_Registry sr : activeServers)
+                        System.out.println(sr.getIp().getHostAddress() + "   ");
+                
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+                
+            }
+        }
+        
+        
+        
+    }
 }
 
