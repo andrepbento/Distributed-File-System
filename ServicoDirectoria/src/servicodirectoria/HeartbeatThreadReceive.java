@@ -12,9 +12,10 @@ import java.util.logging.Logger;
 public class HeartbeatThreadReceive extends Thread implements Constantes{
     private DatagramSocket socketReceive;
     private DatagramPacket packetReceive;
-    protected List<Server_Registry> activeServers;
+    protected List<ServerRegistry> activeServers;
+    protected List<ServerRegistry> serverHistory;
     
-    public HeartbeatThreadReceive(List<Server_Registry> activeServers) throws SocketException{
+    public HeartbeatThreadReceive(List<ServerRegistry> activeServers) throws SocketException{
         socketReceive = new DatagramSocket(LISTENING_PORT);
         socketReceive.setSoTimeout(31000);
         packetReceive = null;
@@ -22,7 +23,7 @@ public class HeartbeatThreadReceive extends Thread implements Constantes{
     }
     
     private void setServerLogOn(InetAddress serverIp) {
-        for(Server_Registry sr : activeServers)
+        for(ServerRegistry sr : activeServers)
             if(sr.getIp().equals(serverIp))
                 sr.setLog(true);
     }
@@ -60,7 +61,7 @@ public class HeartbeatThreadReceive extends Thread implements Constantes{
                 try {
                 Thread.sleep(TIME + 200);
                 
-                for(Server_Registry sr : activeServers)
+                for(ServerRegistry sr : activeServers)
                     if(sr.getLog() == false)
                         activeServers.remove(sr);
                     else
@@ -69,7 +70,7 @@ public class HeartbeatThreadReceive extends Thread implements Constantes{
                 // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
                 
                 System.out.print("Servidores ligados:  ");
-                for(Server_Registry sr : activeServers)
+                for(ServerRegistry sr : activeServers)
                         System.out.print(sr.getIp().toString()+ "   ");
                 System.out.println("");
                 
@@ -79,9 +80,6 @@ public class HeartbeatThreadReceive extends Thread implements Constantes{
                 
             }
         }
-        
-        
-        
     }
 }
 

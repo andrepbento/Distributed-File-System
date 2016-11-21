@@ -18,8 +18,8 @@ import java.util.logging.Logger;
  * @author Jorge
  */
 public class HeartbeatThreadSend extends Thread implements Constantes{
-    DatagramSocket socketSend;
-    DatagramPacket packetSend;
+    private DatagramSocket socketSend;
+    private DatagramPacket packetSend;
 
     public HeartbeatThreadSend(InetAddress ip) throws SocketException{
         socketSend = new DatagramSocket();
@@ -37,7 +37,6 @@ public class HeartbeatThreadSend extends Thread implements Constantes{
         while(true){
             try {
                 socketSend.send(packetSend);
-                
                 Thread.sleep(TIME);
             } catch (IOException ex) {
                 Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);

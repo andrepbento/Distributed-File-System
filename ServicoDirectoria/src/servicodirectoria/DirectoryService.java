@@ -25,7 +25,7 @@ import java.util.List;
 public class DirectoryService extends Thread implements Constantes{
     private DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
-    private List<Server_Registry> activeServers;
+    private List<ServerRegistry> activeServers;
     private boolean threadIsRunning = false;
 
     public DirectoryService(int listeningPort) throws SocketException
@@ -36,7 +36,7 @@ public class DirectoryService extends Thread implements Constantes{
         activeServers = new ArrayList<>();
     }
 
-    public synchronized List<Server_Registry> getActiveServers() {
+    public synchronized List<ServerRegistry> getActiveServers() {
             return activeServers;
     }
     
@@ -67,7 +67,7 @@ public class DirectoryService extends Thread implements Constantes{
     }
     
     public boolean serverExists(String nome){   
-        for (Server_Registry sr : activeServers) {
+        for (ServerRegistry sr : activeServers) {
             if(sr.getNome().equalsIgnoreCase(nome))
                 return true;
         }
@@ -107,7 +107,7 @@ public class DirectoryService extends Thread implements Constantes{
                         porto = packet.getPort();
                         
                         if(!serverExists(name)) {
-                            activeServers.add(new Server_Registry(name, ip, porto));
+                            activeServers.add(new ServerRegistry(name, ip, porto));
                             System.out.println("Ligou-se o servidor: " + ip + " porto: " + porto);
                             if(!threadIsRunning){ //Só corre uma vez
                                 new HeartbeatThreadReceive(activeServers).start();
