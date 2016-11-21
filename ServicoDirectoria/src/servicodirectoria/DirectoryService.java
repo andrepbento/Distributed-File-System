@@ -34,7 +34,7 @@ public class DirectoryService extends Thread implements Constantes{
         socket = new DatagramSocket(listeningPort);
         activeServers = new ArrayList<>();
     }
-
+//ola
     public synchronized List<Server_Registry> getActiveServers() {
             return activeServers;
     }
