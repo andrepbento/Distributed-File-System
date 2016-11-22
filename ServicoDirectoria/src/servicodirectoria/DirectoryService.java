@@ -25,6 +25,7 @@ import java.util.List;
 //RECEBI O OLA!
 //Jorge
 //CONSEGUI RECEBER! ->andre
+//pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
 
 public class DirectoryService extends Thread implements Constantes{
     private DatagramSocket socket;
