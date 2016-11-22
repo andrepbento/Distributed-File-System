@@ -21,7 +21,7 @@ import java.util.List;
  *
  * @author andre
  */
-//Ola Jorge
+//Ola Jorgelaksfnlahfla
 public class DirectoryService extends Thread implements Constantes{
     private DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
