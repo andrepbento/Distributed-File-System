@@ -5,10 +5,8 @@
  */
 package servicodirectoria;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -26,6 +24,10 @@ import java.util.List;
 
 
 //Tudo ok?
+//slfnakjfna
+
+//alfnaljg
+//aeflagblsgb
 public class DirectoryService extends Thread implements Constantes{
     private DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
