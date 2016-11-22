@@ -5,10 +5,8 @@
  */
 package servicodirectoria;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -23,9 +21,18 @@ import java.util.List;
  */
 //OLA LUIS
 //RECEBI O OLA!
+<<<<<<< HEAD
 //Jorge
 //CONSEGUI RECEBER! ->andre
 //pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+
+//Tudo ok?
+//slfnakjfna
+
+//alfnaljg
+//aeflagblsgb
+//CONSEGUI RECEBER! ->andre
+//ESTE É o teste com o git bash
 
 public class DirectoryService extends Thread implements Constantes{
     private DatagramSocket socket;
