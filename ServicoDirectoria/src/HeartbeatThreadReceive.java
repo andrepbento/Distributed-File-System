@@ -1,4 +1,3 @@
-package servicodirectoria;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -6,17 +5,18 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-public class HeartbeatThreadReceive extends Thread implements Constantes{
+public class HeartbeatThreadReceive extends Thread {
     private DatagramSocket socketReceive;
     private DatagramPacket packetReceive;
     protected List<ServerRegistry> activeServers;
     protected List<ServerRegistry> serverHistory;
     
+    protected List<Client> activeClients;
+    //protected List<Client
+    
     public HeartbeatThreadReceive(List<ServerRegistry> activeServers) throws SocketException{
-        socketReceive = new DatagramSocket(LISTENING_PORT);
+        socketReceive = new DatagramSocket(Constants.LISTENING_PORT);
         socketReceive.setSoTimeout(31000);
         packetReceive = null;
         this.activeServers = activeServers;
@@ -36,9 +36,10 @@ public class HeartbeatThreadReceive extends Thread implements Constantes{
         }
                 
         new CheckIfServerIsOn().start();
+        new CheckIfClientIsOn().start();
         while(true){
             try {
-                packetReceive = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
+                packetReceive = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
                 socketReceive.receive(packetReceive);
                 
                 setServerLogOn(packetReceive.getAddress());
@@ -47,9 +48,8 @@ public class HeartbeatThreadReceive extends Thread implements Constantes{
                 
                 System.out.println("Recebi heartbeat de " + packetReceive.getAddress());
             } catch (IOException ex) {
-                Logger.getLogger(HeartbeatThreadReceive.class.getName()).log(Level.SEVERE, null, ex);
-            } 
-            
+                ex.printStackTrace();
+            }
         }
     }
     
@@ -59,19 +59,47 @@ public class HeartbeatThreadReceive extends Thread implements Constantes{
         public void run() {
             while(true) {
                 try {
-                Thread.sleep(TIME + 200);
+                Thread.sleep(Constants.TIME + 200);
                 
-                for(ServerRegistry sr : activeServers)
-                    if(sr.getLog() == false)
-                        activeServers.remove(sr);
+                for(ServerRegistry s : activeServers)
+                    if(!s.getLog())
+                        activeServers.remove(s);
                     else
-                        sr.setLog(false);
+                        s.setLog(false);
                 
                 // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
                 
-                System.out.print("Servidores ligados:  ");
-                for(ServerRegistry sr : activeServers)
-                        System.out.print(sr.getIp().toString()+ "   ");
+                System.out.print("Connected servers:  ");
+                for(ServerRegistry s : activeServers)
+                        System.out.print(s.getIp().toString()+ "\t");
+                System.out.println();
+                
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    
+    class CheckIfClientIsOn extends Thread {
+
+        @Override
+        public void run() {
+            while(true) {
+                try {
+                Thread.sleep(Constants.TIME + 200);
+                
+                for(Client c : activeClients)
+                    if(!c.isLogged())
+                        activeClients.remove(c);
+                    //else
+                        //c.setLog(false);
+                
+                // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
+                
+                System.out.print("Clientes ligados:  ");
+                for(Client c : activeClients)
+                        System.out.print(c.getUsername()+ "   ");
                 System.out.println("");
                 
                 } catch(InterruptedException e) {
