@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package servidor;
+
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -17,14 +17,14 @@ import java.util.logging.Logger;
  *
  * @author Jorge
  */
-public class HeartbeatThreadSend extends Thread implements Constantes{
+public class HeartbeatThreadSend extends Thread{
     private DatagramSocket socketSend;
     private DatagramPacket packetSend;
 
     public HeartbeatThreadSend(InetAddress ip) throws SocketException{
         socketSend = new DatagramSocket();
-        packetSend = new DatagramPacket(HEARTBEAT.getBytes(),HEARTBEAT.length()
-                                        ,ip, SENDING_PORT);
+        packetSend = new DatagramPacket(Constants.HEARTBEAT_SERVER.getBytes(),Constants.HEARTBEAT_SERVER.length()
+                                        ,ip, Constants.SENDING_PORT);
     }
     
     @Override
@@ -37,7 +37,7 @@ public class HeartbeatThreadSend extends Thread implements Constantes{
         while(true){
             try {
                 socketSend.send(packetSend);
-                Thread.sleep(TIME);
+                Thread.sleep(Constants.TIME);
             } catch (IOException ex) {
                 Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);
             } catch (InterruptedException ex) {
