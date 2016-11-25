@@ -1,3 +1,4 @@
+<<<<<<< HEAD:Servidor/src/HeartbeatThreadSend.java
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -18,6 +19,10 @@ import java.util.logging.Logger;
  * @author Jorge
  */
 public class HeartbeatThreadSend extends Thread{
+=======
+
+public class HeartbeatThreadSend extends Thread implements Constantes{
+>>>>>>> a16874484eedd3acc490eed34c97f2807e87f48e:Servidor/src/servidor/HeartbeatThreadSend.java
     private DatagramSocket socketSend;
     private DatagramPacket packetSend;
 
