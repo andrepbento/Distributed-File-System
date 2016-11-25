@@ -1,4 +1,3 @@
-package servicodirectoria;
 
 import java.net.InetAddress;
 
