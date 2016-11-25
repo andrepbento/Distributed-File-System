@@ -21,7 +21,6 @@ import java.util.List;
  */
 //OLA LUIS
 //RECEBI O OLA!
-<<<<<<< HEAD
 //Jorge
 //CONSEGUI RECEBER! ->andre
 //pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
