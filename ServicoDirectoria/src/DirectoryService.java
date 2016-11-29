@@ -106,11 +106,15 @@ public class DirectoryService extends Thread {
                             activeServers.add(new ServerRegistry(name, ip, porto));
                             System.out.println("Server connected: "+name+"\t"
                                     +ip+":"+porto);
+                            packet = new DatagramPacket("REGISTADO".getBytes(), Constants.REGISTADO.length(), ip, porto);
+                            socket.send(packet);
                             if(!threadIsRunning){
                                 new HeartbeatThreadReceive(activeServers).start();
                                 threadIsRunning = true;
                             }
                         }
+                        packet = new DatagramPacket("ERRO".getBytes(), Constants.ERRO.length(), ip, porto);
+                        socket.send(packet);
                         break;
                     case Constants.CLIENT:
                         processClientCommand(comando);
@@ -123,7 +127,7 @@ public class DirectoryService extends Thread {
             }catch(Exception e){
                 System.out.println(e);
             }finally{
-                closeSocket();
+                //closeSocket();
             }
         }
     }

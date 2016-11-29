@@ -15,6 +15,10 @@ public final class Constants {
     public static final String CMD_LOGOUT = "LOGOUT";
     public static final String CMD_LIST = "LIST";
     
+    //Server CMD List
+    public static final String REGISTADO = "REGISTADO";
+    public static final String ERRO = "ERRO";
+    
     //Client Codes
     // [0 - 99] CMD
     public static final int CODE_CMD_FAILURE = 0;

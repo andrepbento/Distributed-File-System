@@ -10,6 +10,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,6 +33,7 @@ public class Server{
         socket = null;
         packet = null;
         socket = new DatagramSocket();
+        heartBeatList =new ArrayList<>();
     }
     
     public String waitDatagram() throws IOException
@@ -57,13 +59,16 @@ public class Server{
     
     //Regista-se mas se já ouver um servidor com o mesmo nome não regista
     public boolean sendRegister() throws IOException{
-        String msg = "SERVIDOR " + this.name + " ";
+        String msg = "SERVER " + this.name + " ";
         String resultado;
+        System.out.println("CHEGUEI AQUI");
         packet = new DatagramPacket(msg.getBytes(), msg.length(), ip, listeningPort);
         socket.send(packet);
-        
+                System.out.println("CHEGUEI AQUI");
+
         packet = new DatagramPacket(new byte[Constants.MAX_SIZE],Constants.MAX_SIZE);
-        socket.receive(packet);
+        socket.receive(packet);        
+        System.out.println("CHEGUEI AQUI");
         resultado = new String(packet.getData(),0,packet.getLength());
         System.out.println("O registo foi enviado para o Serviço de directoria"
                             + " e o resultado foi o seguinte: [" 
@@ -104,6 +109,7 @@ public class Server{
             if(servidor.sendRegister()==true)
                 System.out.println("Servidor Registado com sucesso.");
             else{
+                System.out.println("NAO ME REGISTEI");
                 throw new IOException();
             }
             HeartbeatThreadSend novaHeartBeat = new HeartbeatThreadSend(ip);
@@ -117,6 +123,8 @@ public class Server{
             
         }catch(NumberFormatException e){
             System.out.println("O porto de escuta deve ser um inteiro positivo.");
+        }catch(NullPointerException e){
+            System.out.println("Null pointer exception apanho do hertbeat." + e);
         }catch(SocketException e){
             System.out.println("Ocorreu um erro ao nível do socket UDP:\n\t"+e);
         }catch(IOException e){
