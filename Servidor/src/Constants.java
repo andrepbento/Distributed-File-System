@@ -1,7 +1,15 @@
 
+
 public final class Constants {
     
-    private Constants() {}
+    private Constants(){}
+    //HeadBeatThreadSend
+    public static final long TIME = 30000;
+    public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
+    public static final int SENDING_PORT = 9801;
+    
+    //Server
+    public static final int MAX_SIZE = 256;
     
     //Names
     public static final String SERVER = "SERVER";
@@ -12,10 +20,6 @@ public final class Constants {
     public static final String CMD_LOGIN = "LOGIN";
     public static final String CMD_LOGOUT = "LOGOUT";
     public static final String CMD_LIST = "LIST";
-    
-    //Server CMD List
-    public static final String REGISTADO = "REGISTADO";
-    public static final String ERRO = "ERRO";
     
     //Client Codes
     // [0 - 99] CMD
@@ -29,9 +33,6 @@ public final class Constants {
     // [400-499] LIST
 
     //HeartbeatThreadReceive
-    public static final long TIME = 30000;
-    public static final int MAX_SIZE = 256;
-    public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
     public static final int LISTENING_PORT = 9801;
     
     //DirectoryService

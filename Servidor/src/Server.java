@@ -3,24 +3,27 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package servidor;
+
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  * @author Luis
  */
-public class Server implements Constantes{
+public class Server{
     private String name;
     private DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
     private InetAddress ip;
     private int listeningPort;
+    static List<HeartbeatThreadSend> heartBeatList;
     
     public Server(String name, InetAddress ip, int listeningPort) throws SocketException 
     {
@@ -30,9 +33,10 @@ public class Server implements Constantes{
         socket = null;
         packet = null;
         socket = new DatagramSocket();
+        heartBeatList =new ArrayList<>();
     }
     
-    /*public String waitDatagram() throws IOException
+    public String waitDatagram() throws IOException
     {
         String request;
         
@@ -40,23 +44,40 @@ public class Server implements Constantes{
             return null;
         }
         
-        packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
+        packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
         socket.receive(packet);
         request = new String(packet.getData(), 0, packet.getLength());
         
-        if(debug){
+        if(true){
             System.out.println("Recebido \"" + request + "\" de " + 
                     packet.getAddress().getHostAddress() + ":" + packet.getPort());
         }
         
         return request;
     
-    }*/
+    }
     
-    public void sendRegister() throws IOException{
-        String msg = "SERVIDOR " + this.name + " ";
+    //Regista-se mas se já ouver um servidor com o mesmo nome não regista
+    public boolean sendRegister() throws IOException{
+        String msg = "SERVER " + this.name + " ";
+        String resultado;
+        System.out.println("CHEGUEI AQUI");
         packet = new DatagramPacket(msg.getBytes(), msg.length(), ip, listeningPort);
         socket.send(packet);
+                System.out.println("CHEGUEI AQUI");
+
+        packet = new DatagramPacket(new byte[Constants.MAX_SIZE],Constants.MAX_SIZE);
+        socket.receive(packet);        
+        System.out.println("CHEGUEI AQUI");
+        resultado = new String(packet.getData(),0,packet.getLength());
+        System.out.println("O registo foi enviado para o Serviço de directoria"
+                            + " e o resultado foi o seguinte: [" 
+                            + resultado + "]");
+        if(resultado.equalsIgnoreCase("REGISTADO")==true)
+            return true;
+        if(resultado.equalsIgnoreCase("ERRO")==true)
+            return false;
+        return false;
     }
     
     public void closeSocket()
@@ -78,13 +99,22 @@ public class Server implements Constantes{
         }
         
         try{
+            //Preencher os campos de registo
             serverName = args[1];
             ip = InetAddress.getByName(args[2]);
             porto = Integer.parseInt(args[3]);
             
+            //Registar o Servidor
             servidor = new Server(serverName, ip, porto); 
-            servidor.sendRegister();
-            new HeartbeatThreadSend(ip).start();
+            if(servidor.sendRegister()==true)
+                System.out.println("Servidor Registado com sucesso.");
+            else{
+                System.out.println("NAO ME REGISTEI");
+                throw new IOException();
+            }
+            HeartbeatThreadSend novaHeartBeat = new HeartbeatThreadSend(ip);
+            heartBeatList.add(novaHeartBeat);
+            novaHeartBeat.start();
             
             while(true) {
                 System.out.printf("z");
@@ -93,10 +123,12 @@ public class Server implements Constantes{
             
         }catch(NumberFormatException e){
             System.out.println("O porto de escuta deve ser um inteiro positivo.");
+        }catch(NullPointerException e){
+            System.out.println("Null pointer exception apanho do hertbeat." + e);
         }catch(SocketException e){
             System.out.println("Ocorreu um erro ao nível do socket UDP:\n\t"+e);
         }catch(IOException e){
-            System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+            System.out.println("Ocorreu um erro no registo do servidor:\n\t"+e);
         }finally{
             if(servidor != null){
                 servidor.closeSocket();

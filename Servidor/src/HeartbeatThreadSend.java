@@ -1,12 +1,25 @@
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class HeartbeatThreadSend extends Thread implements Constantes{
+/**
+ *
+ * @author Jorge
+ */
+public class HeartbeatThreadSend extends Thread{
+    
+    
     private DatagramSocket socketSend;
     private DatagramPacket packetSend;
 
     public HeartbeatThreadSend(InetAddress ip) throws SocketException{
         socketSend = new DatagramSocket();
-        packetSend = new DatagramPacket(HEARTBEAT.getBytes(),HEARTBEAT.length()
-                                        ,ip, SENDING_PORT);
+        packetSend = new DatagramPacket(Constants.HEARTBEAT_SERVER.getBytes(),Constants.HEARTBEAT_SERVER.length()
+                                        ,ip, Constants.SENDING_PORT);
     }
     
     @Override
@@ -19,7 +32,7 @@ public class HeartbeatThreadSend extends Thread implements Constantes{
         while(true){
             try {
                 socketSend.send(packetSend);
-                Thread.sleep(TIME);
+                Thread.sleep(Constants.TIME);
             } catch (IOException ex) {
                 Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);
             } catch (InterruptedException ex) {
@@ -27,7 +40,4 @@ public class HeartbeatThreadSend extends Thread implements Constantes{
             }  
         }
     }
-    
-    
-    
 }
