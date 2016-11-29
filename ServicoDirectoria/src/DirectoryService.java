@@ -89,6 +89,8 @@ public class DirectoryService extends Thread {
                 if(receivedMsg == null)
                     continue;
 
+                System.out.println("ReceivedMSG: "+receivedMsg);
+                
                 String []comando= receivedMsg.split(" ");
                 InetAddress ip;
                 int porto;
@@ -115,8 +117,7 @@ public class DirectoryService extends Thread {
                         socket.send(packet);
                         break;
                     case Constants.CLIENT:
-                        // COMO IDENTIFICAR QUEM É O CLIENTE QUE MANDOU O CMD
-                        //processClientCommand(comando);
+                        processClientCommand(comando);
                         break;
                 }
             }catch(IOException e){
@@ -130,34 +131,38 @@ public class DirectoryService extends Thread {
             }
         }
     }
-    /*
+    
     private void processClientCommand(String[] cmd) {
-        if(cmd.length <= 2) {
+        if(cmd.length <= 3) {
             sendClientResponse(Constants.CODE_CMD_FAILURE);
             return;
         }
         
-        switch(cmd[1].toUpperCase()) { // TIPO DE COMANDO
+        switch(cmd[2].toUpperCase()) { // TIPO DE COMANDO
             case Constants.CMD_REGISTER:
-                // SE JÁ ESTIVER REGISTADO NÃO PERMITIR QUE SE VOLTE A REGISTAR *******************[FALTA IMPLEMENTAR]-Depende do reconhecimento de user***********
                 System.out.print("Received " + Constants.CMD_REGISTER);
-                if(cmd.length < 4) {
-                    sendClientResponse(Constants.CODE_REGISTER_FAILURE);
-                    System.out.print("\tRegister_Failure\n");
-                }else{
-                    if(!clientExists(cmd[2])) {
-                        clientsList.add(new Client(cmd[2], cmd[3]));
-                        sendClientResponse(Constants.CODE_REGISTER_OK);
-                        System.out.println("\tRegister Client OK\t"+cmd[2]+","+cmd[3]+"\n");
+                if(cmd[1].equals(Constants.NO_USER)){
+                    if(cmd.length < 4) {
+                        sendClientResponse(Constants.CODE_REGISTER_FAILURE);
+                        System.out.print("\tRegister_Failure\n");
                     }else{
-                        sendClientResponse(Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS);
-                        System.out.println("\tRegister Client FAIL\t"+cmd[2]+"\tAlready exists\n");
+                        if(!clientExists(cmd[2])) {
+                            clientsList.add(new Client(cmd[2], cmd[3]));
+                            sendClientResponse(Constants.CODE_REGISTER_OK);
+                            System.out.println("\tRegister Client OK\t"+cmd[2]+","+cmd[3]+"\n");
+                        }else{
+                            sendClientResponse(Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS);
+                            System.out.println("\tRegister Client FAIL\t"+cmd[2]+"\tAlready exists\n");
+                        }
                     }
                 }
                 break;
             case Constants.CMD_LOGIN:
-                // SE JÁ ESTIVER LOGADO NÃO PERMITIR QUE SE VOLTE A LOGAR [CODE_LOGIN_ALREADY_LOGGED]*********[FALTA IMPLEMENTAR]-Depende do reconhecimento de user***********
                 System.out.println("Received " + Constants.CMD_LOGIN);
+                if(clientIsLogged(cmd[3])){
+                    sendClientResponse(Constants.CODE_LOGIN_ALREADY_LOGGED);
+                    break;
+                }
                 if(cmd.length < 4){
                     sendClientResponse(Constants.CODE_LOGIN_FAILURE);
                     System.out.print("\tLogin_Failure\n");
@@ -173,14 +178,43 @@ public class DirectoryService extends Thread {
                 }
                 break;
             case Constants.CMD_LOGOUT:
+                System.out.println("Received " + Constants.CMD_LOGOUT);
+                if(cmd[1].equals(Constants.NO_USER)){
+                    sendClientResponse(Constants.CODE_LOGIN_NOT_LOGGED_IN);
+                    break;
+                }
+                for(Client c : clientsList)
+                    if(c.getUsername().compareTo(cmd[1]) == 0)
+                        c.setLogged(false);
                 break;
-            case Constants.CMD_LIST: // -s: Servers -c: Clients
+            case Constants.CMD_LIST: 
+                if(!clientIsLogged(cmd[1])){
+                    sendClientResponse(Constants.CODE_LOGIN_NOT_LOGGED_IN);
+                    break;
+                } else {
+                    String list = "";
+                    if(cmd[3].equalsIgnoreCase("-s")){
+                        list+="SERVERS LIST\n";
+                        for(ServerRegistry s : activeServers)
+                            list += s.getNome()+"\n";
+                        list+="--------------";
+                    }else if(cmd[3].equalsIgnoreCase("-c")){
+                        list+="CLIENTS LIST\n";
+                        for(Client c : clientsList)
+                            list += c.getUsername()+"\n";
+                        list+="--------------";
+                    }else{
+                        sendClientResponse(Constants.CODE_LIST_FAILURE);
+                        break;
+                    }
+                    sendClientResponse(list);
+                }
                 break;
             default:
                 sendClientResponse(Constants.CODE_CMD_NOT_RECOGNIZED);
         }
     }
-    */
+    
     private void sendClientResponse(int responseCode) {
         byte[] response = ByteBuffer.allocate(4).putInt(responseCode).array();
         
@@ -193,9 +227,20 @@ public class DirectoryService extends Thread {
         }
     }
     
-    public void closeSocket(){
+    private void sendClientResponse(String response){
+        
+    }
+    
+    private void closeSocket(){
         if(socket != null)
             socket.close();
+    }
+    
+    private boolean clientIsLogged(String username){
+        for(Client c : clientsList)
+            if(c.isLogged() && username.compareToIgnoreCase(c.getUsername()) == 0)
+                return true;
+        return false;
     }
     
     public static void main(String[] args) {
