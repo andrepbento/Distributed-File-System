@@ -11,7 +11,7 @@ public class HeartbeatThreadSend extends Thread{
     public HeartbeatThreadSend(InetAddress ip) throws SocketException{
         socketSend = new DatagramSocket();
         packetSend = new DatagramPacket(Constants.HEARTBEAT_CLIENT.getBytes(), 
-                Constants.HEARTBEAT_CLIENT.length(), ip, Constants.SENDING_PORT);
+                Constants.HEARTBEAT_CLIENT.length(), ip, Constants.SENDING_PORT_HB);
     }
     
     @Override
