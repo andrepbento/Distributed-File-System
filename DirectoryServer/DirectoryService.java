@@ -1,12 +1,18 @@
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.nio.ByteBuffer;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -21,20 +27,19 @@ public class DirectoryService extends Thread {
     
     private List<Client> clientsList;
     
-    public DirectoryService(int listeningPort) throws SocketException{
+    public DirectoryService() throws SocketException{
         socket = null;
         packet = null;       
-        socket = new DatagramSocket(listeningPort);
+        socket = new DatagramSocket(Constants.LISTENIGN_PORT);
         activeServers = new ArrayList<>();
-        clientsList = new ArrayList<>();
-    }
-
-    public synchronized List<ServerRegistry> getActiveServers() {
-        return activeServers;
-    }
-    
-    public synchronized List<Client> getClientsList() {
-        return clientsList;
+        clientsList = loadClientsList();
+        try {
+            System.out.println("DirectoryService started...\n"
+                    +"IP:"+InetAddress.getLocalHost().getHostAddress()
+                    +"\tPort"+Constants.LISTENIGN_PORT);
+        } catch (UnknownHostException ex) {
+            ex.printStackTrace();
+        }
     }
     
     public String waitDatagram() throws IOException {
@@ -60,18 +65,9 @@ public class DirectoryService extends Thread {
         return request;
     }
     
-    private boolean serverExists(String nome){   
-        for (ServerRegistry s : activeServers)
-            if(s.getNome().equalsIgnoreCase(nome))
-                return true;
-        return false;
-    }
-    
-    private boolean clientExists(String username){
-        for(Client c : clientsList)
-            if(c.getUsername().equalsIgnoreCase(username))
-                return true;
-        return false;
+    private void closeSocket(){
+        if(socket != null)
+            socket.close();
     }
     
     public void processRequests(){
@@ -88,14 +84,12 @@ public class DirectoryService extends Thread {
 
                 if(receivedMsg == null)
                     continue;
-
-                System.out.println("ReceivedMSG: "+receivedMsg);
                 
                 String []comando= receivedMsg.split(" ");
                 InetAddress ip;
                 int porto;
                 String name;
-                System.out.println("CHEGUEI AQUI");              
+        
                 switch(comando[0].toUpperCase()){
                     case Constants.SERVER: 
                         name = comando[1];
@@ -117,7 +111,6 @@ public class DirectoryService extends Thread {
                         socket.send(packet);
                         break;
                     case Constants.CLIENT:
-                        System.out.println("CHEGUEI AQUI CLIENTE");
                         processClientCommand(comando);
                         break;
                 }
@@ -133,43 +126,33 @@ public class DirectoryService extends Thread {
         }
     }
     
+    public synchronized List<ServerRegistry> getActiveServers() {
+        return activeServers;
+    }
+    
+    private boolean serverExists(String nome){   
+        for (ServerRegistry s : activeServers)
+            if(s.getNome().equalsIgnoreCase(nome))
+                return true;
+        return false;
+    }
+    
     private void processClientCommand(String[] cmd) {
-        //if(cmd.length <= 3) {
-        //    sendClientResponse(Constants.CODE_CMD_FAILURE);
-        //    return;
-        //}
-                    System.out.println("SWITCH");
-        switch(cmd[2].toUpperCase()) { // TIPO DE COMANDO
+        if(cmd.length <= 2) {
+            sendClientResponse(Constants.CODE_CMD_FAILURE);
+            return;
+        }
+
+        switch(cmd[1].toUpperCase()) {
             case Constants.CMD_REGISTER:
                 System.out.print("Received " + Constants.CMD_REGISTER);
-                if(cmd[1].equals(Constants.NO_USER)){
-                    if(cmd.length < 4) {
-                        sendClientResponse(Constants.CODE_REGISTER_FAILURE);
-                        System.out.print("\tRegister_Failure\n");
-                    }else{
-                        if(!clientExists(cmd[2])) {
-                            clientsList.add(new Client(cmd[2], cmd[3]));
-                            sendClientResponse(Constants.CODE_REGISTER_OK);
-                            System.out.println("\tRegister Client OK\t"+cmd[2]+","+cmd[3]+"\n");
-                        }else{
-                            sendClientResponse(Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS);
-                            System.out.println("\tRegister Client FAIL\t"+cmd[2]+"\tAlready exists\n");
-                        }
-                    }
-                }
-                break;
-            case Constants.CMD_LOGIN:
-                System.out.println("Received " + Constants.CMD_LOGIN);
-                if(clientIsLogged(cmd[3])){
-                    sendClientResponse(Constants.CODE_LOGIN_ALREADY_LOGGED);
-                    break;
-                }
-                if(cmd.length < 4){
-                    sendClientResponse(Constants.CODE_LOGIN_FAILURE);
-                    System.out.print("\tLogin_Failure\n");
+                if(cmd.length < 4) {
+                    sendClientResponse(Constants.CODE_REGISTER_FAILURE);
+                    System.out.print("\tRegister_Failure\n");
                 }else{
-                    if(!clientExists(cmd[2])) {// | Client.logged() true | false
+                    if(!clientExists(packet.getAddress())) {
                         clientsList.add(new Client(cmd[2], cmd[3]));
+                        saveClientsList();
                         sendClientResponse(Constants.CODE_REGISTER_OK);
                         System.out.println("\tRegister Client OK\t"+cmd[2]+","+cmd[3]+"\n");
                     }else{
@@ -178,18 +161,40 @@ public class DirectoryService extends Thread {
                     }
                 }
                 break;
-            case Constants.CMD_LOGOUT:
-                System.out.println("Received " + Constants.CMD_LOGOUT);
-                if(cmd[1].equals(Constants.NO_USER)){
-                    sendClientResponse(Constants.CODE_LOGIN_NOT_LOGGED_IN);
+            case Constants.CMD_LOGIN:
+                System.out.println("Received " + Constants.CMD_LOGIN);
+                if(clientIsLogged(packet.getAddress())){
+                    sendClientResponse(Constants.CODE_LOGIN_ALREADY_LOGGED);
                     break;
                 }
-                for(Client c : clientsList)
-                    if(c.getUsername().compareTo(cmd[1]) == 0)
+                if(cmd.length < 4){
+                    sendClientResponse(Constants.CODE_LOGIN_FAILURE);
+                    System.out.print("\tLogin_Failure\n");
+                }else{
+                    if(!clientExists(packet.getAddress())) { // CHECK IF USER IS ALREADY LOGGED
+                        sendClientResponse(Constants.CODE_LOGIN_OK);
+                        System.out.println("\tLogin Client OK\t"+cmd[2]+","+cmd[3]+"\n");
+                    }else{
+                        sendClientResponse(Constants.CODE_LOGIN_FAILURE);
+                        System.out.println("\tLogin Client FAIL\t"+cmd[2]+"\tAlready exists\n");
+                    }
+                }
+                break;
+            case Constants.CMD_LOGOUT:
+                System.out.println("Received " + Constants.CMD_LOGOUT);
+                if(!clientIsLogged(packet.getAddress())){
+                    sendClientResponse(Constants.CODE_LOGIN_NOT_LOGGED_IN);
+                    break;
+                } else {
+                    Client c = getClient(packet.getAddress());
+                    if(c != null)
                         c.setLogged(false);
+                    System.out.println("");
+                    //sendClientResponse(Constants.CODE); LOGOUT OK
+                }
                 break;
             case Constants.CMD_LIST: 
-                if(!clientIsLogged(cmd[1])){
+                if(!clientIsLogged(packet.getAddress())){
                     sendClientResponse(Constants.CODE_LOGIN_NOT_LOGGED_IN);
                     break;
                 } else {
@@ -217,12 +222,44 @@ public class DirectoryService extends Thread {
         }
     }
     
+    public synchronized List<Client> getClientsList() {
+        return clientsList;
+    }
+    
+    private Client getClient(InetAddress clientAddress){
+        for(Client c : clientsList)
+            if(c.equals(new Client(clientAddress)))
+                return c;
+        return null;
+    }
+    
+    private boolean clientExists(InetAddress clientAddress){
+        for(Client c : clientsList)
+            if(c.equals(new Client(clientAddress)))
+                return true;
+        return false;
+    }
+    
+    private boolean clientIsLogged(InetAddress clientAddress){
+        for(Client c : clientsList)
+            if(c.equals(new Client(clientAddress)) && c.isLogged())
+                return true;
+        return false;
+    }
+    
     private void sendClientResponse(int responseCode) {
-        byte[] response = ByteBuffer.allocate(4).putInt(responseCode).array();
-        
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
         try{
-            packet.setData(response);
-            packet.setLength(response.length);
+            ObjectOutputStream os = new ObjectOutputStream(new
+                                    BufferedOutputStream(byteStream));
+            os.flush();
+            os.writeObject((Integer)responseCode);
+            os.flush();
+
+            byte[] sendBuf = byteStream.toByteArray();
+        
+            packet.setData(sendBuf);
+            packet.setLength(sendBuf.length);
             socket.send(packet);
         } catch(IOException ex) {
             ex.printStackTrace();
@@ -230,33 +267,63 @@ public class DirectoryService extends Thread {
     }
     
     private void sendClientResponse(String response){
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
+        try{
+            ObjectOutputStream os = new ObjectOutputStream(new
+                                    BufferedOutputStream(byteStream));
+            os.flush();
+            os.writeObject((String)response);
+            os.flush();
+
+            byte[] sendBuf = byteStream.toByteArray();
         
+            packet.setData(sendBuf);
+            packet.setLength(sendBuf.length);
+            socket.send(packet);
+        } catch(IOException ex) {
+            ex.printStackTrace();
+        }
     }
     
-    private void closeSocket(){
-        if(socket != null)
-            socket.close();
+    public static final List<Client> loadClientsList(){
+        List<Client> clientList = new ArrayList<>();
+        FileInputStream fins = null;
+        try {
+            fins = new FileInputStream(new File(Constants.CLIENT_LIST_PATH));
+            ObjectInputStream ois = null;
+            ois = new ObjectInputStream(fins);
+            System.out.println("Clients list loaded!\n");
+            return (List<Client>) ois.readObject();
+        } catch (FileNotFoundException e) {} 
+        catch (ClassNotFoundException e){
+        } catch (IOException e) {}
+        System.out.println("Clients list not loaded!\n");
+        return clientList;
     }
     
-    private boolean clientIsLogged(String username){
-        for(Client c : clientsList)
-            if(c.isLogged() && username.compareToIgnoreCase(c.getUsername()) == 0)
-                return true;
-        return false;
+    public final void saveClientsList(){
+        FileOutputStream fout = null;
+        try {
+            fout = new FileOutputStream(Constants.CLIENT_LIST_PATH);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        ObjectOutputStream oos = null;
+        try {
+            System.out.println("Clients list saved!\n");
+            oos = new ObjectOutputStream(fout);
+            oos.writeObject(clientsList);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
     public static void main(String[] args) {
-        if(args[0] == null){
-            System.out.println("Syntax error: ServicoDirectoria <listeningPort>");
-            return;
-        }
-        
         try {
-            DirectoryService sd = new DirectoryService(Integer.parseInt(args[0]));
+            DirectoryService sd = new DirectoryService();
             sd.processRequests();
         } catch(SocketException e) {
             e.printStackTrace();
         }
     }
-    
 }
