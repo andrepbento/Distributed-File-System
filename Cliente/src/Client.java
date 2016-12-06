@@ -1,4 +1,3 @@
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -10,7 +9,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Scanner;
-
 
 public class Client {
     private DatagramSocket udpSocket;
@@ -34,13 +32,13 @@ public class Client {
     
     public void sendRequestUdp() throws IOException{
         cmd = new Scanner(System.in).nextLine();
-        packet = new DatagramPacket(cmd.getBytes(), cmd.length(), directoryServiceIp, directoryServicePort);
+        String send = "CLIENT NO_USER " + cmd;
+        packet = new DatagramPacket(send.getBytes(), send.length(), directoryServiceIp, directoryServicePort);
         udpSocket.send(packet);
     }
     
     public Object receiveResponseUdp() throws IOException, ClassNotFoundException{
-        byte[] response = new byte[Constants.MAX_SIZE];
-        packet = new DatagramPacket(response, Constants.MAX_SIZE);
+        packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
         udpSocket.receive(packet);
         bIn = new ByteArrayInputStream(packet.getData());
         oIn = new ObjectInputStream(bIn);
@@ -48,10 +46,21 @@ public class Client {
         return oIn.readObject();
     }
     
+    public void closeUdpSocket(){
+        if(udpSocket != null)
+            udpSocket.close();
+    }
+    
+    public void closeTcpSocket() throws IOException{
+        if(tcpSocket != null)
+            tcpSocket.close();
+    }
+    
     public void sendRequestTcp() throws IOException{
         cmd = new Scanner(System.in).nextLine();
+        String send = "CLIENT NO_USER " + cmd;
         oOut = new ObjectOutputStream(tcpSocket.getOutputStream());
-        oOut.writeObject(cmd);
+        oOut.writeObject(send);
         oOut.flush();
     }
     
@@ -69,29 +78,29 @@ public class Client {
             
             ip = InetAddress.getByName(args[0]);
             port = Integer.parseInt(args[1]);
-            Client c = new Client(ip, port);
+            Client client = new Client(ip, port);
             
             while(true){
                 System.out.println(">>");
-                c.sendRequestUdp();
-//                Object obj = c.receiveResponseUdp();
-//                
-//                if(obj instanceof Integer){
-//                    Integer code = (Integer)obj;
-//                    switch(code){
-//                        case Constants.CODE_REGISTER_OK:
-//                            System.out.println("You're now registered!\n");
-//                            break;
-//                        case Constants.CODE_REGISTER_FAILURE:
-//                            System.out.println("You're missing some parameters!\n");
-//                            break;
-//                        case Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS:
-//                            System.out.println("The username you're trying to regist already exists!\n");
-//                            break;
-//                    }
-//                }else if(obj instanceof String){
-//                    
-//                }
+                client.sendRequestUdp();
+                Object obj = client.receiveResponseUdp();
+                
+                if(obj instanceof Integer){
+                    Integer code = (Integer)obj;
+                    switch(code){
+                        case Constants.CODE_REGISTER_OK:
+                            System.out.println("You're now registered!\n");
+                            break;
+                        case Constants.CODE_REGISTER_FAILURE:
+                            System.out.println("You're missing some parameters!\n");
+                            break;
+                        case Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS:
+                            System.out.println("The username you're trying to regist already exists!\n");
+                            break;
+                    }
+                }else if(obj instanceof String){
+                    System.out.println("MSG: " + obj.toString());
+                }
             }
             
         } catch (UnknownHostException ex) {
@@ -100,8 +109,10 @@ public class Client {
             System.out.println("Socket exception\n\t"+ex);
         } catch (IOException ex) {
             System.out.println("IOException\n\t"+ex);
-//        } catch (ClassNotFoundException ex) {
-//            System.out.println("Class not found\n\t"+ex);
+        } catch (ClassNotFoundException ex) {
+            System.out.println("Class not found\n\t"+ex);
+        }finally{
+            
         }
         
     }
