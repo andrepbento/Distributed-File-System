@@ -9,13 +9,13 @@ import java.util.List;
 public class HeartbeatThreadReceive extends Thread {
     private DatagramSocket socketReceive;
     private DatagramPacket packetReceive;
-    protected List<ServerRegistry> activeServers;
-    protected List<ServerRegistry> serverHistory;
+    protected List<Server> activeServers;
+    protected List<Server> serverHistory;
     
     protected List<Client> activeClients;
     //protected List<Client
     
-    public HeartbeatThreadReceive(List<ServerRegistry> activeServers) throws SocketException{
+    public HeartbeatThreadReceive(List<Server> activeServers) throws SocketException{
         socketReceive = new DatagramSocket(Constants.HD_LISTENING_PORT);
         socketReceive.setSoTimeout(31000);
         packetReceive = null;
@@ -23,9 +23,9 @@ public class HeartbeatThreadReceive extends Thread {
     }
     
     private void setServerLogOn(InetAddress serverIp) {
-        for(ServerRegistry sr : activeServers)
+        for(Server sr : activeServers)
             if(sr.getIp().equals(serverIp))
-                sr.setLog(true);
+                sr.setLogged(true);
     }
     
     @Override
@@ -61,16 +61,16 @@ public class HeartbeatThreadReceive extends Thread {
                 try {
                 Thread.sleep(Constants.TIME + 200);
                 
-                for(ServerRegistry s : activeServers)
-                    if(!s.getLog())
+                for(Server s : activeServers)
+                    if(!s.isLogged())
                         activeServers.remove(s);
                     else
-                        s.setLog(false);
+                        s.setLogged(false);
                 
                 // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
                 
                 System.out.print("Connected servers:  ");
-                for(ServerRegistry s : activeServers)
+                for(Server s : activeServers)
                         System.out.print(s.getIp().toString()+ "\t");
                 System.out.println();
                 

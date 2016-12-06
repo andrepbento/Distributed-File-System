@@ -35,6 +35,7 @@ public final class Constants {
     public static final int CODE_LOGIN_NOT_LOGGED_IN = 202;
     public static final int CODE_LOGIN_OK = 203;
     // [300-399] LOGOUT
+    public static final int CODE_LOGOUT_OK = 300;
     // [400-499] LIST
     public static final int CODE_LIST_FAILURE = 401;
 
