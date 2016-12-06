@@ -95,7 +95,7 @@ public class DirectoryService extends Thread {
                 InetAddress ip;
                 int porto;
                 String name;
-                                
+                System.out.println("CHEGUEI AQUI");              
                 switch(comando[0].toUpperCase()){
                     case Constants.SERVER: 
                         name = comando[1];
@@ -117,6 +117,7 @@ public class DirectoryService extends Thread {
                         socket.send(packet);
                         break;
                     case Constants.CLIENT:
+                        System.out.println("CHEGUEI AQUI CLIENTE");
                         processClientCommand(comando);
                         break;
                 }
@@ -133,11 +134,11 @@ public class DirectoryService extends Thread {
     }
     
     private void processClientCommand(String[] cmd) {
-        if(cmd.length <= 3) {
-            sendClientResponse(Constants.CODE_CMD_FAILURE);
-            return;
-        }
-        
+        //if(cmd.length <= 3) {
+        //    sendClientResponse(Constants.CODE_CMD_FAILURE);
+        //    return;
+        //}
+                    System.out.println("SWITCH");
         switch(cmd[2].toUpperCase()) { // TIPO DE COMANDO
             case Constants.CMD_REGISTER:
                 System.out.print("Received " + Constants.CMD_REGISTER);
@@ -207,6 +208,7 @@ public class DirectoryService extends Thread {
                         sendClientResponse(Constants.CODE_LIST_FAILURE);
                         break;
                     }
+                    System.out.println("Lista:"+list.toString());
                     sendClientResponse(list);
                 }
                 break;
