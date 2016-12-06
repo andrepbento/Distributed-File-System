@@ -16,7 +16,7 @@ public class HeartbeatThreadReceive extends Thread {
     //protected List<Client
     
     public HeartbeatThreadReceive(List<ServerRegistry> activeServers) throws SocketException{
-        socketReceive = new DatagramSocket(Constants.LISTENING_PORT);
+        socketReceive = new DatagramSocket(Constants.HD_LISTENING_PORT);
         socketReceive.setSoTimeout(31000);
         packetReceive = null;
         this.activeServers = activeServers;
