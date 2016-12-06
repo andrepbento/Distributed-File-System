@@ -226,15 +226,19 @@ public class DirectoryService extends Thread {
                     System.out.println("\tList FAIL\tCMD WRONG");
                     sendClientResponse(Constants.CODE_LOGIN_FAILURE);
                 }else {
-                    if(cmd[2].equalsIgnoreCase("-s"))
+                    if(cmd[2].equalsIgnoreCase("-s")){
+                        System.out.println("\tList Servers OK\tList sended!");
                         sendClientResponse(getServerListSTR());
-                    else if(cmd[2].equalsIgnoreCase("-c"))
+                    }
+                    else if(cmd[2].equalsIgnoreCase("-c")){
+                        System.out.println("\tList Clients OK\tList sended!");
                         sendClientResponse(getClientsListSTR());
-                    else
+                    }else
                         sendClientResponse(Constants.CODE_LIST_FAILURE);
                 }
                 break;
             /*
+                connect
             case Constants.CMD_CONNECT:
                 if(!clientIsLogged(packet.getAddress())){
                     System.out.println("\tList FAIL\tNOT LOGGED IN");
@@ -320,12 +324,13 @@ public class DirectoryService extends Thread {
     private boolean logInClient(String username, String password, 
             InetAddress clientAddress){
         Client c = getClient(username);
-        if(c != null)
+        if(c != null){
             if(c.getPassword().equals(password)){
                 c.setLogged(true);
                 c.setClientAddress(clientAddress);
                 return true;
             }
+        }
         return false;
     }
     
@@ -354,6 +359,7 @@ public class DirectoryService extends Thread {
         } catch(IOException ex) {
             ex.printStackTrace();
         }
+        System.out.println("Mandei INTEGER!");
     }
     
     private void sendClientResponse(String response){
@@ -373,6 +379,7 @@ public class DirectoryService extends Thread {
         } catch(IOException ex) {
             ex.printStackTrace();
         }
+        System.out.println("Mandei STRING!");
     }
     
     public static final List<Client> loadClientsList(){
