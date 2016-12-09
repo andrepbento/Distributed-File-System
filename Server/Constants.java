@@ -1,4 +1,8 @@
 
+import java.util.ArrayList;
+import java.util.List;
+
+
 
 public final class Constants {
     
@@ -37,4 +41,7 @@ public final class Constants {
     
     //DirectoryService
     //public static final String TIME_REQUEST = "TIME";
+    
+    //Lista para enviar as mensagens
+    public List<String> MENSAGEM = new ArrayList();
 }
