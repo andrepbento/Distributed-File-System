@@ -21,7 +21,7 @@ public class Client {
     private ObjectOutputStream oOut;
     private InetAddress directoryServiceIp;
     private int directoryServicePort;
-    
+
     public Client(InetAddress directoryServiceIp, int directoryServicePort) throws SocketException{
         udpSocket = new DatagramSocket();
         packet = null;
@@ -30,9 +30,17 @@ public class Client {
         this.directoryServicePort = directoryServicePort;
     }
     
+    public InetAddress getDirectoryServiceIp() { return directoryServiceIp; }
+
+    public void setDirectoryServiceIp(InetAddress directoryServiceIp) { this.directoryServiceIp = directoryServiceIp; }
+
+    public int getDirectoryServicePort() { return directoryServicePort; }
+
+    public void setDirectoryServicePort(int directoryServicePort) { this.directoryServicePort = directoryServicePort; }
+    
     public void sendRequestUdp() throws IOException{
         cmd = new Scanner(System.in).nextLine();
-        String send = "CLIENT NO_USER " + cmd;
+        String send = "CLIENT " + cmd;
         packet = new DatagramPacket(send.getBytes(), send.length(), directoryServiceIp, directoryServicePort);
         udpSocket.send(packet);
     }
@@ -58,7 +66,7 @@ public class Client {
     
     public void sendRequestTcp() throws IOException{
         cmd = new Scanner(System.in).nextLine();
-        String send = "CLIENT NO_USER " + cmd;
+        String send = "CLIENT " + cmd;
         oOut = new ObjectOutputStream(tcpSocket.getOutputStream());
         oOut.writeObject(send);
         oOut.flush();
@@ -72,7 +80,7 @@ public class Client {
         try {
             
             if(args.length != 2){
-                System.out.println("Number of arguments invalid: java Client IP PORT");
+                System.out.println("Number of arguments invalid: java IP PORT");
                 return;
             }
             
@@ -88,21 +96,46 @@ public class Client {
                 if(obj instanceof Integer){
                     Integer code = (Integer)obj;
                     switch(code){
-                        case Constants.CODE_REGISTER_OK:
-                            System.out.println("You're now registered!\n");
+                        case Constants.CODE_CMD_FAILURE: 
+                            throw new Exceptions.CmdFailure(Constants.MSG_CMD_FAILURE);
+                        case Constants.CODE_CMD_NOT_RECOGNIZED: 
+                            throw new Exceptions.CmdNotRecognized(Constants.MSG_CMD_NOT_RECODNIZED);
+                        case Constants.CODE_REGISTER_OK: 
+                            System.out.println(Constants.MSG_REGISTER_OK);
                             break;
                         case Constants.CODE_REGISTER_FAILURE:
-                            System.out.println("You're missing some parameters!\n");
-                            break;
+                            throw new Exceptions.RegisterFailure(Constants.MSG_REGISTER_FAILURE);
+                        case Constants.CODE_LOGIN_OK:
+                            System.out.println("Login ok");
                         case Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS:
-                            System.out.println("The username you're trying to regist already exists!\n");
-                            break;
+                            throw new Exceptions.RegisterClientAlreadyExists(Constants.MSG_REGISTER_CLIENT_ALREADY_EXISTS);
+                        case Constants.CODE_LOGIN_FAILURE:
+                            throw new Exceptions.LoginFailure(Constants.MSG_LOGIN_FAILURE);
+                        case Constants.CODE_LOGIN_ALREADY_LOGGED:
+                            throw new Exceptions.AlreadyLoggedIn(Constants.MSG_LOGIN_ALREADY_LOGGED);
+                        case Constants.CODE_LOGIN_NOT_LOGGED_IN:
+                            throw new Exceptions.NotLoggedIn(Constants.MSG_LOGIN_NOT_LOGGED_IN);
+                        default:
+                            System.out.println(Constants.MSG_CODE_ERROR); break;
                     }
                 }else if(obj instanceof String){
                     System.out.println("MSG: " + obj.toString());
                 }
             }
-            
+        }catch(Exceptions.NotLoggedIn ex){
+            System.out.println("\ntn"+ex);
+        }catch(Exceptions.AlreadyLoggedIn ex){
+            System.out.println("\ntn"+ex);
+        }catch(Exceptions.LoginFailure ex){
+            System.out.println("\ntn"+ex);
+        }catch(Exceptions.CmdNotRecognized ex){
+            System.out.println("\ntn"+ex);
+        }catch(Exceptions.CmdFailure ex){
+            System.out.println("\ntn"+ex);
+        }catch(Exceptions.RegisterClientAlreadyExists ex){
+            System.out.println("\ntn"+ex);
+        }catch(Exceptions.RegisterFailure ex){
+            System.out.println("\ntn"+ex);
         } catch (UnknownHostException ex) {
             System.out.println("Erro converting InetAddress\n\t"+ex);
         } catch (SocketException ex) {
@@ -114,6 +147,5 @@ public class Client {
         }finally{
             
         }
-        
     }
 }
