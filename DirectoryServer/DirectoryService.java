@@ -87,27 +87,11 @@ public class DirectoryService extends Thread {
                 if(receivedMsg == null)
                     continue;
 
-                String []command= receivedMsg.split(" ");
+                String []command = receivedMsg.split(" ");
                 
                 switch(command[0].toUpperCase()){
                     case Constants.SERVER: 
-                        String name = command[1];
-                        InetAddress ip = packet.getAddress();
-                        int port = packet.getPort();
-
-                        if(!serverExists(name)){
-                            serversList.add(new Server(name, ip, port));
-                            System.out.println("Server connected: "+name+"\t"
-                                    +ip+":"+port);
-                            packet = new DatagramPacket("REGISTADO".getBytes(), Constants.REGISTADO.length(), ip, port);
-                            socket.send(packet);
-                            if(!hbThreadIsRunning){
-                                new HeartbeatThreadReceive(serversList).start();
-                                hbThreadIsRunning = true;
-                            }
-                        }
-                        packet = new DatagramPacket("ERRO".getBytes(), Constants.ERRO.length(), ip, port);
-                        socket.send(packet);
+                        processServerCommand(command);
                         break;
                     case Constants.CLIENT:
                         processClientCommand(command);
@@ -115,14 +99,38 @@ public class DirectoryService extends Thread {
                 }
             }
         }catch(IOException e){
-                System.out.println(e);
-            }catch(NumberFormatException e){
-                System.out.println(e);
-            }catch(Exception e){
-                System.out.println(e);
-            }finally{
-                closeSocket();
+            System.out.println(e);
+        }catch(NumberFormatException e){
+            System.out.println(e);
+        }catch(Exception e){
+            System.out.println(e);
+        }finally{
+            closeSocket();
+        }
+    }
+    
+    private void processServerCommand(String[] command){
+        try{
+            String name = command[1];
+            InetAddress ip = packet.getAddress();
+            int port = packet.getPort();
+
+            if(!serverExists(name)){
+                serversList.add(new Server(name, ip, port));
+                System.out.println("Server connected: "+name+"\t"
+                        +ip+":"+port);
+                packet = new DatagramPacket("REGISTADO".getBytes(), Constants.REGISTADO.length(), ip, port);
+                socket.send(packet);
+                if(!hbThreadIsRunning){
+                    new HeartbeatThreadReceive(serversList).start();
+                    hbThreadIsRunning = true;
+                }
             }
+            packet = new DatagramPacket("ERRO".getBytes(), Constants.ERRO.length(), ip, port);
+            socket.send(packet);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
     
     private void printServersList(){
@@ -157,6 +165,39 @@ public class DirectoryService extends Thread {
             if(s.getName().equalsIgnoreCase(name))
                 return true;
         return false;
+    }
+    
+    public static final List<Server> loadServerList(){
+        List<Server> serverList = new ArrayList<>();
+        FileInputStream fins = null;
+        try {
+            fins = new FileInputStream(new File(Constants.SERVER_LIST_PATH));
+            ObjectInputStream ois = null;
+            ois = new ObjectInputStream(fins);
+            System.out.println("Server list loaded!\n");
+            return (List<Server>) ois.readObject();
+        } catch (FileNotFoundException e) {} 
+        catch (ClassNotFoundException e){
+        } catch (IOException e) {}
+        System.out.println("Clients list not loaded!\n");
+        return serverList;
+    }
+    
+    public final void saveServerList(){
+        FileOutputStream fout = null;
+        try {
+            fout = new FileOutputStream(Constants.SERVER_LIST_PATH);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        ObjectOutputStream oos = null;
+        try {
+            System.out.println("Server list saved!\n");
+            oos = new ObjectOutputStream(fout);
+            oos.writeObject(serversList);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
     private void processClientCommand(String[] cmd) {
