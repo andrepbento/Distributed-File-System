@@ -7,7 +7,6 @@ import java.net.InetAddress;
  * @author andre
  */
 public class Client implements Serializable {
-    
     private String username;
     private String password;
     private InetAddress clientAddress;
