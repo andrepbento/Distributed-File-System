@@ -6,6 +6,7 @@ public final class Constants {
     //DirectoryService
     public static final int LISTENIGN_PORT = 9800;
     public static final String CLIENT_LIST_PATH = "clientList.bin";
+    public static final String SERVER_LIST_PATH = "serverList.bin";
     
     //Names
     public static final String SERVER = "SERVER";
@@ -42,9 +43,7 @@ public final class Constants {
     //HeartbeatThreadReceive
     public static final long TIME = 30000;
     public static final int MAX_SIZE = 256;
+    public static final String HEARTBEAT_CLIENT = "HEARTBEAT_CLIENT";
     public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
     public static final int HD_LISTENING_PORT = 9801;
-    
-    //DirectoryService
-    //public static final String TIME_REQUEST = "TIME";
 }
