@@ -15,7 +15,7 @@ public final class Constants {
     public static final String MSG_CODE_ERROR = "Code Error";
     // [0 - 99] CMD
     public static final int CODE_CMD_FAILURE = 0;
-    public static final String MSG_CMD_FAILURE = "Command failure";
+    public static final String MSG_CMD_FAILURE = "Invalid arguments";
     
     public static final int CODE_CMD_NOT_RECOGNIZED = 1;
     public static final String MSG_CMD_NOT_RECODNIZED = "Command not recognized";
@@ -33,7 +33,7 @@ public final class Constants {
     public static final String MSG_LOGIN_OK = "You logged in";
     
     public static final int CODE_LOGIN_FAILURE = 200;
-    public static final String MSG_LOGIN_FAILURE = "Missing username or password";
+    public static final String MSG_LOGIN_FAILURE = "Check your username or password";
     
     public static final int CODE_LOGIN_ALREADY_LOGGED = 201;
     public static final String MSG_LOGIN_ALREADY_LOGGED = "You're already logged in";
