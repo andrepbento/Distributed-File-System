@@ -38,6 +38,7 @@ public class HeartbeatThreadReceive extends Thread {
         new CheckIfServerIsOn().start();
         new CheckIfClientIsOn().start();
         while(true){
+            /*
             try {
                 packetReceive = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
                 socketReceive.receive(packetReceive);
@@ -50,6 +51,7 @@ public class HeartbeatThreadReceive extends Thread {
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
+            */
         }
     }
     
@@ -58,7 +60,9 @@ public class HeartbeatThreadReceive extends Thread {
         @Override
         public void run() {
             while(true) {
+                /*
                 try {
+                    
                 Thread.sleep(Constants.TIME + 200);
                 
                 for(Server s : activeServers)
@@ -77,6 +81,7 @@ public class HeartbeatThreadReceive extends Thread {
                 } catch(InterruptedException e) {
                     e.printStackTrace();
                 }
+                */
             }
         }
     }
@@ -89,19 +94,22 @@ public class HeartbeatThreadReceive extends Thread {
                 try {
                 Thread.sleep(Constants.TIME + 200);
                 
+                /*
                 for(Client c : activeClients)
                     if(!c.isLogged())
                         activeClients.remove(c);
+                */
                     //else
                         //c.setLog(false);
                 
                 // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
                 
+                /*
                 System.out.print("Clientes ligados:  ");
                 for(Client c : activeClients)
                         System.out.print(c.getUsername()+ "   ");
                 System.out.println("");
-                
+                */
                 } catch(InterruptedException e) {
                     e.printStackTrace();
                 }

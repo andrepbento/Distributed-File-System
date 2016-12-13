@@ -1,10 +1,15 @@
 
+import java.util.ArrayList;
+import java.util.List;
+
+
 
 public final class Constants {
     
     private Constants(){}
     //HeadBeatThreadSend
     public static final long TIME = 30000;
+    public static final long TIME_OUT = 30000;
     public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
     public static final int SENDING_PORT = 9801;
     
@@ -37,4 +42,7 @@ public final class Constants {
     
     //DirectoryService
     //public static final String TIME_REQUEST = "TIME";
+    
+    //Lista para enviar as mensagens
+    public List<String> MENSAGEM = new ArrayList();
 }
