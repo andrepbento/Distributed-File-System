@@ -67,4 +67,20 @@ public class Exceptions{
              super(message);
           }
     }
+    
+    //List
+    static class ListFailure extends Exception{
+
+          public ListFailure(String message){
+             super(message);
+          }
+    }
+    
+    //Connect
+    static class ConnectFailure extends Exception{
+
+          public ConnectFailure(String message){
+             super(message);
+          }
+    }
 }
