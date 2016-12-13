@@ -1,5 +1,6 @@
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,9 +45,7 @@ public class DirectoryService extends Thread {
         printServersList();
     }
     
-    public String waitDatagram() throws IOException {
-        String request;
-        
+    public MSG waitDatagram() throws IOException {
         if(socket == null)
             return null;
         
@@ -54,17 +53,17 @@ public class DirectoryService extends Thread {
         socket.receive(packet);
 
         try{
-            request = new String(packet.getData());
-        }catch(ClassCastException e){
+            ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+            ObjectInputStream ois = new ObjectInputStream(bin);
+            
+            System.out.println("MSG received from "+packet.getAddress().getHostAddress() 
+                    +":"+packet.getPort());
+            return (MSG)ois.readObject();
+        }catch(ClassNotFoundException e){
             System.out.println("Received data from: "+packet.getAddress().getHostAddress() 
-                        +":"+packet.getPort()+" is not a String");
+                        +":"+packet.getPort()+" is not MSG object");
             return null;
         }
-
-        System.out.println("Received \""+request+"\" from "+packet.getAddress().getHostAddress() 
-                    +":"+packet.getPort());
-        
-        return request;
     }
     
     private void closeSocket(){
@@ -73,9 +72,7 @@ public class DirectoryService extends Thread {
     }
     
     public void processRequests(){
-        String receivedMsg;
-        ByteArrayOutputStream bOut;
-        ObjectOutputStream out;
+        MSG receivedMsg;
          
         if(socket == null)
             return;
@@ -86,32 +83,34 @@ public class DirectoryService extends Thread {
 
                 if(receivedMsg == null)
                     continue;
-
-                String []command = receivedMsg.split(" ");
+                if(receivedMsg.getCMD().size() < 1)
+                    continue;
                 
-                switch(command[0].toUpperCase()){
-                    case Constants.SERVER: 
-                        processServerCommand(command);
+                switch(receivedMsg.getCMDarg(0).toUpperCase()){
+                    case Constants.SERVER:
+                        processServerCommand(receivedMsg);
                         break;
                     case Constants.CLIENT:
-                        processClientCommand(command);
+                        processClientCommand(receivedMsg);
                         break;
                 }
             }
-        }catch(IOException e){
+        }catch(IOException | NumberFormatException e){
             System.out.println(e);
-        }catch(NumberFormatException e){
+        }
+        /*catch(Exception e){
+        System.out.println(e);
+        }*/ /*catch(Exception e){
             System.out.println(e);
-        }catch(Exception e){
-            System.out.println(e);
-        }finally{
+        }*/finally{
             closeSocket();
         }
     }
     
-    private void processServerCommand(String[] command){
+    private void processServerCommand(MSG receivedMSG){
+        System.out.println("\tContent: "+receivedMSG.getCMD().toString());
         try{
-            String name = command[1];
+            String name = receivedMSG.getCMDarg(1);
             InetAddress ip = packet.getAddress();
             int port = packet.getPort();
 
@@ -131,6 +130,7 @@ public class DirectoryService extends Thread {
         }catch(Exception e){
             e.printStackTrace();
         }
+        printServersList();
     }
     
     private void printServersList(){
@@ -158,6 +158,13 @@ public class DirectoryService extends Thread {
         }
         list+="----------------------------------\n";
         return list;
+    }
+    
+    private Server getServer(int serverIndex){
+        serverIndex--;
+        if(serversList.size() < serverIndex)
+            return null;
+        return serversList.get(serverIndex);
     }
     
     private boolean serverExists(String name){   
@@ -200,46 +207,47 @@ public class DirectoryService extends Thread {
         }
     }
     
-    private void processClientCommand(String[] cmd) {
-        if(cmd.length <= 2) {
+    private void processClientCommand(MSG receivedMSG) {
+        System.out.println("\tContent: "+receivedMSG.getCMD().toString());
+        if(receivedMSG.getCMD().size() < 2) {
             sendClientResponse(Constants.CODE_CMD_FAILURE);
             return;
         }
 
-        switch(cmd[1].toUpperCase()) {
+        switch(receivedMSG.getCMDarg(1).toUpperCase()) {
             case Constants.CMD_REGISTER:
                 System.out.println("Received " + Constants.CMD_REGISTER);
-                if(cmd.length < 4) {
+                if(receivedMSG.getCMD().size() < 4) {
                     System.out.println("\tRegister Client FAIL");
                     sendClientResponse(Constants.CODE_REGISTER_FAILURE);
                 }else{
-                    if(!clientExists(cmd[2])) {
-                        clientsList.add(new Client(cmd[2], cmd[3], null));
+                    if(!clientExists(receivedMSG.getCMDarg(2))) {
+                        clientsList.add(new Client(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3), null));
                         saveClientsList();
-                        System.out.println("\tRegister Client OK\t"+cmd[2]+","+cmd[3]+"\n");
+                        System.out.println("\tRegister Client OK\t"+receivedMSG.getCMDarg(2)+","+receivedMSG.getCMDarg(3)+"\n");
                         sendClientResponse(Constants.CODE_REGISTER_OK);
                     }else{
-                        System.out.println("\tRegister Client FAIL\t"+cmd[2]+"\tAlready exists\n");
+                        System.out.println("\tRegister Client FAIL\t"+receivedMSG.getCMDarg(2)+"\tAlready exists\n");
                         sendClientResponse(Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS);
                     }
                 }
                 break;
             case Constants.CMD_LOGIN:
                 System.out.println("Received " + Constants.CMD_LOGIN);
-                if(clientIsLogged(cmd[2])){
-                    System.out.println("\tLogin FAIL\t"+cmd[2]+"\tAlready logged");
+                if(clientIsLogged(receivedMSG.getCMDarg(2))){
+                    System.out.println("\tLogin FAIL\t"+receivedMSG.getCMDarg(2)+"\tAlready logged");
                     sendClientResponse(Constants.CODE_LOGIN_ALREADY_LOGGED);
                     break;
                 }
-                if(cmd.length < 4){
+                if(receivedMSG.getCMD().size() < 4){
                     System.out.println("\tLogin FAIL");
                     sendClientResponse(Constants.CODE_LOGIN_FAILURE);
                 }else{
-                    if(logInClient(cmd[2], cmd[3], packet.getAddress())) {
-                        System.out.println("\tLogin Client OK\t"+cmd[2]+","+cmd[3]);
+                    if(logInClient(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3), packet.getAddress())) {
+                        System.out.println("\tLogin Client OK\t"+receivedMSG.getCMDarg(2)+","+receivedMSG.getCMDarg(3));
                         sendClientResponse(Constants.CODE_LOGIN_OK);
                     }else{
-                        System.out.println("\tLogin Client FAIL\t"+cmd[2]);
+                        System.out.println("\tLogin Client FAIL\t"+receivedMSG.getCMDarg(2));
                         sendClientResponse(Constants.CODE_LOGIN_FAILURE);
                     }
                 }
@@ -262,36 +270,39 @@ public class DirectoryService extends Thread {
                     System.out.println("\tList FAIL\tNOT LOGGED IN");
                     sendClientResponse(Constants.CODE_LOGIN_NOT_LOGGED_IN);
                     break;
-                } 
-                if(cmd.length <= 2){
+                }
+                if(receivedMSG.getCMD().size() <= 2){
                     System.out.println("\tList FAIL\tCMD WRONG");
                     sendClientResponse(Constants.CODE_LOGIN_FAILURE);
                 }else {
-                    if(cmd[2].equalsIgnoreCase("-s")){
+                    if(receivedMSG.getCMDarg(2).equalsIgnoreCase("-s")){
                         System.out.println("\tList Servers OK\tList sended!");
-                        sendClientResponse(getServerListSTR());
+                        sendClientResponse(Constants.CODE_LIST_OK, getServerListSTR());
                     }
-                    else if(cmd[2].equalsIgnoreCase("-c")){
+                    else if(receivedMSG.getCMDarg(2).equalsIgnoreCase("-c")){
                         System.out.println("\tList Clients OK\tList sended!");
-                        sendClientResponse(getClientsListSTR());
+                        sendClientResponse(Constants.CODE_LIST_OK, getClientsListSTR());
                     }else
                         sendClientResponse(Constants.CODE_LIST_FAILURE);
                 }
                 break;
-            /*
-                connect
             case Constants.CMD_CONNECT:
                 if(!clientIsLogged(packet.getAddress())){
-                    System.out.println("\tList FAIL\tNOT LOGGED IN");
+                    System.out.println("\tConnect FAIL\tNOT LOGGED IN");
                     sendClientResponse(Constants.CODE_LOGIN_NOT_LOGGED_IN);
                     break;
+                }
+                if(receivedMSG.getCMD().size() < 2){
+                    System.out.println("\tList FAIL\tCMD WRONG");
+                    sendClientResponse(Constants.CODE_CONNECT_FAILURE);
                 } else {
-                    if()
-                    //
-                    
+                    /*
+                    if(tryToConnectClientServer(getServer(receivedMSG.getCMDarg(2))))
+                        // MANDRA IP PORTO
+                    sendClientResponse(Constants.CODE_CONNECT_OK, );
+*/
                 }
                 break;
-            */
             default:
                 sendClientResponse(Constants.CODE_CMD_NOT_RECOGNIZED);
         }
@@ -334,8 +345,9 @@ public class DirectoryService extends Thread {
     
     private Client getClient(InetAddress clientAddress){
         for(Client c : clientsList)
-            if(c.getClientAddress().equals(clientAddress))
-                return c;
+            if(c.getClientAddress() != null)
+                if(c.getClientAddress().equals(clientAddress))
+                    return c;
         return null;
     }
     
@@ -384,12 +396,14 @@ public class DirectoryService extends Thread {
     }
     
     private void sendClientResponse(int responseCode) {
+        MSG msgToClient = new MSG();
+        msgToClient.setMSGCode(responseCode);
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
         try{
             ObjectOutputStream os = new ObjectOutputStream(new
                                     BufferedOutputStream(byteStream));
             os.flush();
-            os.writeObject((Integer)responseCode);
+            os.writeObject((MSG)msgToClient);
             os.flush();
 
             byte[] sendBuf = byteStream.toByteArray();
@@ -403,13 +417,18 @@ public class DirectoryService extends Thread {
         System.out.println("Mandei INTEGER!");
     }
     
-    private void sendClientResponse(String response){
+    private void sendClientResponse(int responseCode, String response){
+        MSG msgToClient = new MSG();
+        List<String> responseMsg = new ArrayList<>();
+        responseMsg.add(response);
+        msgToClient.setCMD(responseMsg);
+        msgToClient.setMSGCode(responseCode);
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
         try{
             ObjectOutputStream os = new ObjectOutputStream(new
                                     BufferedOutputStream(byteStream));
             os.flush();
-            os.writeObject((String)response);
+            os.writeObject((MSG)msgToClient);
             os.flush();
 
             byte[] sendBuf = byteStream.toByteArray();

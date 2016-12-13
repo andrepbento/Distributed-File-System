@@ -17,6 +17,7 @@ public final class Constants {
     public static final String CMD_LOGIN = "LOGIN";
     public static final String CMD_LOGOUT = "LOGOUT";
     public static final String CMD_LIST = "LIST";
+    public static final String CMD_CONNECT = "CONNECT";
     
     //Server CMD List
     public static final String REGISTADO = "REGISTADO";
@@ -39,10 +40,14 @@ public final class Constants {
     public static final int CODE_LOGOUT_OK = 300;
     // [400-499] LIST
     public static final int CODE_LIST_FAILURE = 401;
+    public static final int CODE_LIST_OK = 402;
+    // [500-599] CONNECT
+    public static final int CODE_CONNECT_FAILURE = 501;
+    public static final int CODE_CONNECT_OK = 502;
 
     //HeartbeatThreadReceive
     public static final long TIME = 30000;
-    public static final int MAX_SIZE = 256;
+    public static final int MAX_SIZE = 2048;
     public static final String HEARTBEAT_CLIENT = "HEARTBEAT_CLIENT";
     public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
     public static final int HD_LISTENING_PORT = 9801;
