@@ -15,7 +15,7 @@ public final class Constants {
     public static final String MSG_CODE_ERROR = "Code Error";
     // [0 - 99] CMD
     public static final int CODE_CMD_FAILURE = 0;
-    public static final String MSG_CMD_FAILURE = "Command failure";
+    public static final String MSG_CMD_FAILURE = "Invalid arguments";
     
     public static final int CODE_CMD_NOT_RECOGNIZED = 1;
     public static final String MSG_CMD_NOT_RECODNIZED = "Command not recognized";
@@ -33,7 +33,7 @@ public final class Constants {
     public static final String MSG_LOGIN_OK = "You logged in";
     
     public static final int CODE_LOGIN_FAILURE = 200;
-    public static final String MSG_LOGIN_FAILURE = "Missing username or password";
+    public static final String MSG_LOGIN_FAILURE = "Check your username or password";
     
     public static final int CODE_LOGIN_ALREADY_LOGGED = 201;
     public static final String MSG_LOGIN_ALREADY_LOGGED = "You're already logged in";
@@ -41,20 +41,23 @@ public final class Constants {
     public static final int CODE_LOGIN_NOT_LOGGED_IN = 202;
     public static final String MSG_LOGIN_NOT_LOGGED_IN = "You need to login first";
     // [300-399] LOGOUT
-    
+    public static final int CODE_LOGOUT_OK = 300;
     // [400-499] LIST
+    public static final int CODE_LIST_FAILURE = 401;
+    public static final int CODE_LIST_OK = 402;
+    
+    // [500-599] CONNECT
+    public static final int CODE_CONNECT_FAILURE = 501;
+    public static final int CODE_CONNECT_OK = 502;
     
     
     //DirectoryService
     public static final int SENDING_PORT_SD = 9801;
-    public static final int MAX_SIZE = 256;
+    public static final int MAX_SIZE = 2048;
     
     
     //HeadBeatThreadSend
     public static final long TIME = 30 * 1000;
     public static final String HEARTBEAT_CLIENT = "HEARTBEAT_CLIENTE";
     public static final int SENDING_PORT_HB = 9801;
-    
-  
-
 }
