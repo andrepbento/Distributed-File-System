@@ -6,17 +6,17 @@ import java.net.InetAddress;
  *
  * @author andre
  */
-public class Client implements Serializable {
+public class ClientInfo implements Serializable {
     private String username;
     private String password;
     private InetAddress clientAddress;
     private boolean logged;
     
-    public Client(InetAddress clientAddress){
+    public ClientInfo(InetAddress clientAddress){
         this.clientAddress = clientAddress;
     }
     
-    public Client(String username, String password, InetAddress clientAddress) {
+    public ClientInfo(String username, String password, InetAddress clientAddress) {
         this.username = username;
         this.password = password;
         this.clientAddress = clientAddress;
@@ -24,7 +24,7 @@ public class Client implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        Client c = (Client)o;
+        ClientInfo c = (ClientInfo)o;
         if(this.clientAddress == c.getClientAddress())
             return true;
         return false;
