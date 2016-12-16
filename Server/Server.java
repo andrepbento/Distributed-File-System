@@ -35,18 +35,18 @@ public class Server{
     private DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
     private InetAddress ip;
-    private int listeningPort;
+    private int sendingPort;
     //static List<HeartbeatThreadSend> heartBeatList;
     private HeartbeatThreadSend heartBeat;
     private ServerSocket serverSocket;
     private Socket socketToClient;   
     MSG msgReceived;
     
-    public Server(String name, InetAddress ip, int listeningPort) throws SocketException 
+    public Server(String name, InetAddress ip, int sendingPort) throws SocketException 
     {
         this.name = name;
         this.ip = ip;
-        this.listeningPort = listeningPort;
+        this.sendingPort = sendingPort;
         socket = null;
         packet = null;
         socket = new DatagramSocket();
@@ -60,29 +60,32 @@ public class Server{
             throw new SocketException();
         }
         
-        packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
-        socket.receive(packet);
-        
-        ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-        ObjectInputStream ois = new ObjectInputStream(bin);
-        
-        try{
-            System.out.println("VOU TRATAR DA MENSAGEM");
-            
-        MSG msgReceived = (MSG)ois.readObject();
+        do{
+            System.out.println("ESTOU A ESPERA...");
+            packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
+            socket.receive(packet);
 
-        System.out.println(msgReceived.toStringCMD());
+            ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+            ObjectInputStream ois = new ObjectInputStream(bin);
 
-        }catch(ClassNotFoundException e){
-            System.err.println("CLASS NOT FOUND EXCEPTION " + e);
-        }catch(SocketException e){
-            System.err.println("SOCKET NOT FOUND EXCEPTION " + e);
-        }
+            try{
+                System.out.println("VOU TRATAR DA MENSAGEM");
+
+            MSG msgReceived = (MSG)ois.readObject();
+
+            System.out.println(msgReceived.toStringCMD());
+
+            }catch(ClassNotFoundException e){
+                System.err.println("CLASS NOT FOUND EXCEPTION " + e);
+            }catch(SocketException e){
+                System.err.println("SOCKET NOT FOUND EXCEPTION " + e);
+            }
+        }while(true);
     
     }
     
     //Regista-se mas se já ouver um servidor com o mesmo nome não regista
-    public boolean sendRegister() throws IOException, ClassNotFoundException{
+    public boolean sendRegister() throws IOException, ClassNotFoundException, Exceptions.ConnectFailure{
         
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
         
@@ -92,81 +95,69 @@ public class Server{
             os.flush();
             MSG mesageSend = new MSG();
             List<String> listSend = new ArrayList<>();
+            
+            //ADICIONAR OS COMANDAS A LIST
             listSend.add("SERVER");
             listSend.add(this.name);
+            
+            //ADICIONAR A LIST A MSG
             mesageSend.setCMD(listSend);
+            
+            //ENVIAR
             os.writeObject((MSG)mesageSend);
             os.flush();
 
             byte[] sendBuf = byteStream.toByteArray();
             
-            packet = new DatagramPacket(sendBuf, sendBuf.length, ip, listeningPort);
+            packet = new DatagramPacket(sendBuf, sendBuf.length, ip, sendingPort);
             socket.send(packet);
             
         } catch(IOException ex) {
             ex.printStackTrace();
         }
-        System.out.println("MANDEI O REGISTO!");
+        System.out.println("LINHA 118 -> MANDEI O REGISTO!");
         
         packet = new DatagramPacket(new byte[Constants.MAX_SIZE],Constants.MAX_SIZE);
-        /*socket.receive(packet);
+        socket.receive(packet);
         
         ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
         ObjectInputStream ois = new ObjectInputStream(bin);
-        */
-        //try{
             
-        //msgReceived = (MSG)ois.readObject();
+        msgReceived = (MSG)ois.readObject();
         
-        //System.out.println(msgReceived.toStringCMD());
+        System.out.println("LINHA 128 ->" + msgReceived.toStringCMD());
+        int code = msgReceived.getMSGCode();
+        System.out.println("LINHA 130 ->" + msgReceived.getMSGCode());
         
-            System.out.println("FALTA TRATAR DOS COMANDOS QUE O SD ENVIA");
-        /*if(!msgReceived.getCMD().isEmpty()){
-            if(msgReceived.getCMD().get(0).equals("REGISTERED")==true)
-                return true;
-            if(msgReceived.getCMD().get(0).equals("ERRO")==true)
-                return false;
-        }*/
-        /*}catch(ClassNotFoundException excp){
-            System.err.println("Class Not Found Exception :[" + excp + "]");;
-        }*/
-        
-        
-        
-        /*
-        //MANEIRA ANTIGA DE ENVIAR REGISTO
-        String msg = "SERVER " + this.name + " ";
-        String resultado;
-        System.out.println("CHEGUEI AQUI");
-        packet = new DatagramPacket(msg.getBytes(), msg.length(), ip, listeningPort);
-        socket.send(packet);
-                System.out.println("CHEGUEI AQUI");
-
-        packet = new DatagramPacket(new byte[Constants.MAX_SIZE],Constants.MAX_SIZE);
-        socket.receive(packet);        
-        System.out.println("CHEGUEI AQUI");
-        resultado = new String(packet.getData(),0,packet.getLength());
-        System.out.println("O registo foi enviado para o Serviço de directoria"
-                            + " e o resultado foi o seguinte: [" 
-                            + resultado + "]");
-        
-        if(resultado.equalsIgnoreCase("REGISTADO")==true)
-            return true;
-        if(resultado.equalsIgnoreCase("ERRO")==true)
-            return false;*/
-        
-        return false;
+        System.out.println("LINHA 132 -> FALTA TRATAR DOS COMANDOS QUE O SD ENVIA");
+        try{
+                        switch(code){
+                            case Constants.CODE_SERVER_REGISTER_OK:
+                                System.out.println("Register Ok!");
+                                break;
+                            case Constants.CODE_SERVER_REGISTER_FAILURE:
+                                throw  new Exceptions.ConnectFailure("Connect failure");
+                            default:
+                                System.out.println("LINHA 141 -> NAO ENTREI EM NENHUM DOS CODIGOS"); break;
+                        }
+        }catch(Exceptions.ConnectFailure ex){
+            System.out.println("\ntn"+ex);
+            return false;
+        }finally{
+            this.closeSocket();
+        }
+        return true;
     }
-    /*
+    
     public boolean inicializeTCP(int listPort) throws IOException{
-        int listeningPort;
+        int sendingPort;
         
         serverSocket = null;
         
         
-            listeningPort = listPort;
+            sendingPort = listPort;
             //Coloca o serversocket a ouvir no porto de escuta para onde os clietnes irão mandar
-            serverSocket = new ServerSocket(listeningPort);
+            serverSocket = new ServerSocket();
             
             try{
                         
@@ -177,17 +168,7 @@ public class Server{
                 System.out.println("O servidor vai terminar...");
                 return false;
             }
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+        /*    
             //Receber Comando para ficheiro
             
             File localDirectory;
@@ -274,10 +255,10 @@ public class Server{
             
             
             
-            
+         */       
         return true;
     }
-    */
+    
     public final void processRequestsClient() throws IOException{
         Socket toClientSocket;
         BufferedReader in;
@@ -333,14 +314,14 @@ public class Server{
         }
     }
     
-    public static void main(String[] args) throws InterruptedException, ClassNotFoundException {
+    public static void main(String[] args) throws InterruptedException, ClassNotFoundException, Exceptions.ConnectFailure {
         InetAddress ip;
         int porto;
         Server servidor = null;
         String serverName;
         
         if(args.length != 4){
-            System.out.println("Sintaxe: java Servidor Nome ip listeningPort");
+            System.out.println("Sintaxe: java Servidor Nome ip sendingPort");
             return;
         }
         
@@ -352,16 +333,16 @@ public class Server{
             
             //Registar o Servidor
             servidor = new Server(serverName, ip, porto); 
-            /*if(*/servidor.sendRegister();//==true)
+            if(servidor.sendRegister()==true)
                 System.out.println("Servidor Registado com sucesso.");
-            /*else{
+            else{
                 System.out.println("NAO ME REGISTEI");
                 throw new IOException();
-            }*/
+            }
             
             //INICIALIZAR A HEARTBEAT THREAD
-            //servidor.heartBeat = new HeartbeatThreadSend(ip);
-            //servidor.heartBeat.start();
+            servidor.heartBeat = new HeartbeatThreadSend(ip);
+            servidor.heartBeat.start();
             
             //INICIALIZA COMUNICAÇÃO TCP
             //servidor.inicializeTCP(porto);

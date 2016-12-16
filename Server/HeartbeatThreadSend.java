@@ -31,6 +31,7 @@ public class HeartbeatThreadSend extends Thread{
         
         while(true){
             try {
+                System.out.println("THREAD A FUNCIONAR ");
                 socketSend.send(packetSend);
                 Thread.sleep(Constants.TIME);
             } catch (IOException ex) {
