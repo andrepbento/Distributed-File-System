@@ -4,6 +4,9 @@ public final class Constants {
     
     private Constants(){ }
     
+    
+    public static final String CLIENT = "CLIENT";
+    
     //Client CMD List
     public static final String NO_USER = "NO_USER";
     public static final String CMD_REGISTER = "REGISTER";

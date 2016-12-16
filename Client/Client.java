@@ -11,30 +11,30 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Client {
+public class Client {    
     private DatagramSocket udpSocket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
     private String cmd;
-    private String name;
-    private ByteArrayInputStream bIn;
     private ObjectInputStream oIn;
     private ObjectOutputStream oOut;
     private InetAddress directoryServiceIp;
     private int directoryServicePort;
     private MSG msg;
-    private List<Socket> tcpSockets;
+    Map<String, ServerList> serverList;
     
     public Client(InetAddress directoryServiceIp, int directoryServicePort) throws SocketException{
         udpSocket = new DatagramSocket();
         packet = null;
-        tcpSockets = null;
         this.directoryServiceIp = directoryServiceIp;
         this.directoryServicePort = directoryServicePort;
+        serverList = new HashMap<>();
     }
     
     public InetAddress getDirectoryServiceIp() { return directoryServiceIp; }
@@ -53,7 +53,7 @@ public class Client {
     public void sendRequestUdp() throws IOException{
         msg = new MSG();
         cmd = new Scanner(System.in).nextLine();
-        String line = "CLIENT " + cmd;
+        String line = Constants.CLIENT + cmd;
         fillMsg(line);
         //Implementar o resto
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
@@ -77,22 +77,52 @@ public class Client {
         if(udpSocket != null)
             udpSocket.close();
     }
+//        public void closeTcpSocket() throws IOException{
+//        if(tcpSockets != null || !tcpSockets.isEmpty()){
+//            for (Socket s : tcpSockets) {
+//                s.close();
+//            }  
+//        }
+//    }
+//
     
-    public void closeTcpSocket() throws IOException{
-        if(tcpSockets != null || !tcpSockets.isEmpty()){
-            for (Socket s : tcpSockets) {
-                s.close();
-            }  
+//    public void sendRequestTcp(int ) throws IOException{
+//        cmd = new Scanner(System.in).nextLine();
+//        String send = "CLIENT " + cmd;
+//        oOut = new ObjectOutputStream(tcpSockets.get(index).getOutputStream());
+//        oOut.writeObject(send);
+//        oOut.flush();
+//    }
+    
+    public void updateServerList(List<ServerInfo> list){
+        for (ServerInfo item : list) {
+            if(!serverList.containsKey(item.getName())){
+                serverList.put(item.getName(), new ServerList(item, null));
+            }
+        }
+        
+        for (Map.Entry<String, ServerList> entry : serverList.entrySet()) {
+            String serverName = entry.getKey();
+            ServerList serverL = entry.getValue();
+            if(!list.contains(serverL.getServerInfo())){
+                serverList.remove(serverName, serverL);
+            }
         }
     }
     
-    public void sendRequestTcp(int ) throws IOException{
-        cmd = new Scanner(System.in).nextLine();
-        String send = "CLIENT " + cmd;
-        oOut = new ObjectOutputStream(tcpSockets.get(index).getOutputStream());
-        oOut.writeObject(send);
-        oOut.flush();
-    }
+    public String listServers(){
+        StringBuilder list = null;
+        list.append("Server Name").append("\tState (Connected/Not Connected\n\n");
+        for (Map.Entry<String, ServerList> entry : serverList.entrySet()) {
+            String serverName = entry.getKey();
+            ServerList serverL = entry.getValue();
+            list.append(serverName);
+            if(serverL.getSocket() == null) list.append("Not Connected");
+            else list.append("Connected\n");
+            
+        }
+        return list.toString();
+    } 
     
     private void connectToServer(){
         
@@ -106,51 +136,31 @@ public class Client {
         //Process errors
     }
     
-    private void run(){
+    public void runClient(){
         
-    }
-    
-    public static void main(String[] args) {        
-            
-        InetAddress ip = null;
-        int port = -1;
-        
-        try {
-            
-            if(args.length != 2){
-                System.out.println("Number of arguments invalid: java IP PORT");
-                return;
-            }
-            
-            ip = InetAddress.getByName(args[0]);
-            port = Integer.parseInt(args[1]);
-            Client client = new Client(ip, port);
-            
+        try{  
             while(true){
                 System.out.print(">>");
-                client.sendRequestUdp();
-                Object obj = client.receiveResponseUdp();
-                try{  
+                sendRequestUdp();
+                Object obj = receiveResponseUdp();
+
                     if(obj instanceof MSG){
                         MSG msg = (MSG)obj;
-                        switch(msg.getMsgCode()){
+                        switch(msg.getMSGCode()){
                             case Constants.CODE_LOGOUT_OK:
                                 System.out.println("Logout Ok!");
                                 break;
                             case Constants.CODE_CONNECT_FAILURE:
                                 throw  new Exceptions.ConnectFailure("Connect failure");
                             case Constants.CODE_CONNECT_OK:
-                                System.out.println("Connected!");
-                                
-                                
-                                
-                                
+                                System.out.println("Connected!");                              
                                 break;
                             case Constants.CODE_LIST_FAILURE:
                                 throw new Exceptions.ListFailure("List Failures");
                             case Constants.CODE_LIST_OK:
-                                if(!msg.getCMD().isEmpty())
-                                    System.out.println(msg.getCMD().get(0));
+                                if(!msg.getCMD().isEmpty()){
+                                    updateServerList(msg.getServersList());
+                                }
                                 break;
                             case Constants.CODE_CMD_FAILURE: 
                                 throw new Exceptions.CmdFailure(Constants.MSG_CMD_FAILURE);
@@ -175,32 +185,32 @@ public class Client {
                             default:
                                 System.out.println(Constants.MSG_CODE_ERROR); break;
                         }
-                    }
-                
-                }catch(Exceptions.NotLoggedIn | Exceptions.AlreadyLoggedIn | 
-                        Exceptions.LoginFailure | Exceptions.CmdNotRecognized | 
-                        Exceptions.CmdFailure | Exceptions.RegisterClientAlreadyExists |
-                        Exceptions.RegisterFailure | Exceptions.ListFailure | 
-                        Exceptions.ConnectFailure ex){
-                    System.out.println("\ntn"+ex);
-                }finally{
-                    //client.closeUdpSocket();
                 }
             }
-            
-        }catch (UnknownHostException ex) {
-            System.out.println("Erro converting InetAddress\n\t"+ex);
-            ex.printStackTrace();
-        } catch (SocketException ex) {
-            System.out.println("Socket exception\n\t"+ex);
-            ex.printStackTrace();
-        } catch (IOException ex) {
-            System.out.println("IOException\n\t"+ex);
-            ex.printStackTrace();
-        } catch (ClassNotFoundException ex) {
-            System.out.println("Class not found\n\t"+ex);
-            ex.printStackTrace();
+        }catch(Exception ex){
+            System.out.println("\ntn"+ex);
         }finally{
+            //client.closeUdpSocket();
+        }
+    }
+    
+    public static void main(String[] args) {        
+             
+        if(args.length != 2){
+            System.out.println("Number of arguments invalid: java IP PORT");
+            return;
+        }
+        
+        try {
+            InetAddress clientIp = null;
+            int clientPort = -1;
+            
+            clientIp = InetAddress.getByName(args[0]);
+            clientPort = Integer.parseInt(args[1]);
+            new Client(clientIp, clientPort).runClient();
+        } catch (UnknownHostException | SocketException ex) {
+            System.out.println(ex);
+            ex.printStackTrace();
         }
     }
 }
