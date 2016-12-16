@@ -9,41 +9,51 @@ import java.util.List;
 public class HeartbeatThreadReceive extends Thread {
     private DatagramSocket socketReceive;
     private DatagramPacket packetReceive;
-    protected List<Server> activeServers;
-    protected List<Server> serverHistory;
     
-    protected List<Client> activeClients;
-    //protected List<Client
+    // ISTO É A CÓPIA DO QUE É PASSADO DA FUNCAO proccessReques(), MESMA REFERENCIA, APENAS COPIA DE REFERENCIA
+    protected List<ServerInfo> activeServers;
+    protected List<ServerInfo> serverHistory;
     
-    public HeartbeatThreadReceive(List<Server> activeServers) throws SocketException{
-        socketReceive = new DatagramSocket(Constants.HD_LISTENING_PORT);
+    protected List<ClientInfo> activeClients;
+    
+    public HeartbeatThreadReceive(List<ServerInfo> activeServers) throws SocketException{
+        socketReceive = new DatagramSocket(Constants.HB_LISTENING_PORT);
         socketReceive.setSoTimeout(31000);
         packetReceive = null;
         this.activeServers = activeServers;
     }
     
-    private void setServerLogOn(InetAddress serverIp) {
-        for(Server sr : activeServers)
-            if(sr.getIp().equals(serverIp))
-                sr.setLogged(true);
+    private void setServerLoggedOn(ServerInfo si) {
+        for(ServerInfo s : activeServers)
+            if(s.equals(si))
+                s.setLogged(true);
     }
     
     @Override
     public void run() {
-        
         if(socketReceive == null){
                 return;
         }
-                
+        
         new CheckIfServerIsOn().start();
         new CheckIfClientIsOn().start();
+        
         while(true){
-            /*
             try {
                 packetReceive = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
                 socketReceive.receive(packetReceive);
                 
-                setServerLogOn(packetReceive.getAddress());
+                String hbReceived = new String(packetReceive.getData());
+                
+                if(hbReceived.equals(Constants.HEARTBEAT_SERVER)) {
+                    System.out.println(Constants.HEARTBEAT_SERVER+" received!");
+                    setServerLoggedOn(new ServerInfo(packetReceive.getAddress(), packetReceive.getPort()));
+                } else if(hbReceived.equals(Constants.HEARTBEAT_CLIENT)) {
+                    System.out.println(Constants.HEARTBEAT_CLIENT+" received!");
+                    System.out.println("IMPLEMENTAR setClientLoggedOn(/*...*/)");
+                    //setClientLoggedOn(new ClientInfo(/*...*/));
+                } else
+                    System.out.println("Hearth-Beat received NOT RECOGNIZED!");
                 
                 // VERIFICAR SE EXISTE NA LISTA O IP DE ONDE FOI RECEBIDO O HB POSTERIORMENTE (HISTÓRICO)
                 
@@ -51,51 +61,46 @@ public class HeartbeatThreadReceive extends Thread {
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
-            */
         }
     }
     
     class CheckIfServerIsOn extends Thread {
-
         @Override
         public void run() {
-            while(true) {
-                /*
-                try {
-                    
-                Thread.sleep(Constants.TIME + 200);
-                
-                for(Server s : activeServers)
-                    if(!s.isLogged())
-                        activeServers.remove(s);
-                    else
-                        s.setLogged(false);
-                
-                // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
-                
-                System.out.print("Connected servers:  ");
-                for(Server s : activeServers)
-                        System.out.print(s.getIp().toString()+ "\t");
-                System.out.println();
-                
-                } catch(InterruptedException e) {
-                    e.printStackTrace();
+            try {
+                while(true) {
+                    Thread.sleep(Constants.TIME + 200);
+
+                    synchronized(activeServers) {
+                        for(ServerInfo s : activeServers)
+                            if(!s.isLogged()) {
+                                System.out.println("Server "+s.getName()+" removed!");
+                                activeServers.remove(s);
+                            } else
+                                s.setLogged(false);
+
+                        // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
+
+                        System.out.print("Connected servers:  ");
+                        for(ServerInfo s : activeServers)
+                                System.out.print(s.getIp().toString()+ "\t");
+                        System.out.println();
+                    }
                 }
-                */
+            } catch(InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
     
     class CheckIfClientIsOn extends Thread {
-
         @Override
         public void run() {
-            while(true) {
-                try {
-                Thread.sleep(Constants.TIME + 200);
-                
+            try {
+                while(true) {
+                    Thread.sleep(Constants.TIME + 200);
                 /*
-                for(Client c : activeClients)
+                for(ClientInfo c : activeClients)
                     if(!c.isLogged())
                         activeClients.remove(c);
                 */
@@ -106,14 +111,13 @@ public class HeartbeatThreadReceive extends Thread {
                 
                 /*
                 System.out.print("Clientes ligados:  ");
-                for(Client c : activeClients)
+                for(ClientInfo c : activeClients)
                         System.out.print(c.getUsername()+ "   ");
                 System.out.println("");
                 */
-                } catch(InterruptedException e) {
-                    e.printStackTrace();
                 }
-                
+            } catch(InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }

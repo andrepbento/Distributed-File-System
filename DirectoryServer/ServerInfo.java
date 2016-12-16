@@ -1,17 +1,30 @@
 
 import java.net.InetAddress;
 
-public class Server {
+public class ServerInfo {
     private String name;
     private InetAddress ip;
     private int port;
-    private boolean logged;
+    private boolean logged;    
 
-    public Server(String name, InetAddress ip, int port) {
+    public ServerInfo(String name, InetAddress ip, int port) {
         this.name = name;
         this.ip = ip;
         this.port = port;
         this.logged = true;
+    }
+    
+    public ServerInfo(InetAddress ip, int port) {
+        this.ip = ip;
+        this.port = port;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        ServerInfo si = (ServerInfo)o;
+        if(this.ip.equals(si.getIp()) && this.port == si.getPort())
+            return true;
+        return false;
     }
 
     public String getName() {
