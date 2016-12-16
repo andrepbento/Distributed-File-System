@@ -83,7 +83,7 @@ public class DirectoryService extends Thread {
 
                 if(receivedMsg == null)
                     continue;
-                if(receivedMsg.getCMD().size() < 1)
+                if(receivedMsg.getCMD().isEmpty())
                     continue;
                 
                 switch(receivedMsg.getCMDarg(0).toUpperCase()){
@@ -299,11 +299,10 @@ public class DirectoryService extends Thread {
                     else if(receivedMSG.getCMDarg(2).equalsIgnoreCase("-c")){
                         System.out.println("\tList Clients OK\tList sended!");
                         System.out.println("IMPLEMENTAR O PROCESSAMENTO E ENVIO");
-                        /*
-                        MSG clientMSG = new MSG(Constants.CODE_LIST_OK);
-                        clientMSG.setClientList(getLoggedClients());
-                        sendClientResponse(clientMSG);
-                        */
+                        // IMPLEMENTAR ISTO POSTERIORMENTE **********************************************************************************************************************
+                        MSG clientMSG = new MSG(Constants.CODE_LIST_FAILURE);
+                        // clientMSG.setClientList(getLoggedClients());
+                        sendResponse(clientMSG);
                     }else
                         sendResponse(new MSG(Constants.CODE_LIST_FAILURE));
                 }
