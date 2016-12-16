@@ -13,8 +13,7 @@ public final class Constants {
     public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
     public static final int SENDING_PORT = 9801;
     
-    //Server
-    public static final int MAX_SIZE = 256;
+    
     
     //Names
     public static final String SERVER = "SERVER";
@@ -42,6 +41,11 @@ public final class Constants {
     
     //DirectoryService
     //public static final String TIME_REQUEST = "TIME";
+    
+    //Server
+    public static final int MAX_SIZE = 256;
+    public static final int CODE_SERVER_REGISTER_FAILURE = 1000;
+    public static final int CODE_SERVER_REGISTER_OK = 1001;
     
     //Lista para enviar as mensagens
     public List<String> MENSAGEM = new ArrayList();
