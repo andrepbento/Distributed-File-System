@@ -141,7 +141,7 @@ public class DirectoryService extends Thread {
                     hbThreadIsRunning = true;
                 }
             }
-            sendResponse(receivedMSG);
+            sendResponse(serverResponse);
         }catch(Exception e){
             e.printStackTrace();
         }
