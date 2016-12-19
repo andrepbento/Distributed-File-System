@@ -39,53 +39,21 @@ public class Server{
     //static List<HeartbeatThreadSend> heartBeatList;
     private HeartbeatThreadSend heartBeat;
     private ServerSocket serverSocket;
-    private Socket socketToClient;   
-    MSG msgReceived;
+    private List<Socket> listClientsSockets;
+    private MSG msgReceived;
     
     public Server(String name, InetAddress ip, int sendingPort) throws SocketException 
     {
         this.name = name;
         this.ip = ip;
         this.sendingPort = sendingPort;
-        socket = null;
         packet = null;
         socket = new DatagramSocket();
+        listClientsSockets = new ArrayList<>();
     }
-    
-    public void waitDatagram() throws IOException, ClassNotFoundException
-    {
-        String request;
-        
-        if(socket == null){
-            throw new SocketException();
-        }
-        
-        do{
-            System.out.println("ESTOU A ESPERA...");
-            packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
-            socket.receive(packet);
 
-            ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-            ObjectInputStream ois = new ObjectInputStream(bin);
-
-            try{
-                System.out.println("VOU TRATAR DA MENSAGEM");
-
-            MSG msgReceived = (MSG)ois.readObject();
-
-            System.out.println(msgReceived.toStringCMD());
-
-            }catch(ClassNotFoundException e){
-                System.err.println("CLASS NOT FOUND EXCEPTION " + e);
-            }catch(SocketException e){
-                System.err.println("SOCKET NOT FOUND EXCEPTION " + e);
-            }
-        }while(true);
-    
-    }
-    
-    //Regista-se mas se já ouver um servidor com o mesmo nome não regista
-    public boolean sendRegister() throws IOException, ClassNotFoundException, Exceptions.ConnectFailure{
+    //Regista-se mas se já ouver um server com o mesmo nome não regista
+    public void sendRegister(){
         
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
         
@@ -93,11 +61,12 @@ public class Server{
             ObjectOutputStream os = new ObjectOutputStream(new
                                     BufferedOutputStream(byteStream));
             os.flush();
+            
             MSG mesageSend = new MSG();
             List<String> listSend = new ArrayList<>();
             
-            //ADICIONAR OS COMANDAS A LIST
-            listSend.add("SERVER");
+            //ADICIONAR OS COMANDS A LIST
+            listSend.add(Constants.SERVER);
             listSend.add(this.name);
             
             //ADICIONAR A LIST A MSG
@@ -115,59 +84,59 @@ public class Server{
         } catch(IOException ex) {
             ex.printStackTrace();
         }
-        System.out.println("LINHA 118 -> MANDEI O REGISTO!");
-        
+        System.out.println("Registration submitted...");
+    }
+    
+    public boolean receiveRegisterAnswer(){
         packet = new DatagramPacket(new byte[Constants.MAX_SIZE],Constants.MAX_SIZE);
-        socket.receive(packet);
-        
-        ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-        ObjectInputStream ois = new ObjectInputStream(bin);
-            
-        msgReceived = (MSG)ois.readObject();
-        
-        System.out.println("LINHA 128 ->" + msgReceived.toStringCMD());
-        int code = msgReceived.getMSGCode();
-        System.out.println("LINHA 130 ->" + msgReceived.getMSGCode());
-        
-        System.out.println("LINHA 132 -> FALTA TRATAR DOS COMANDOS QUE O SD ENVIA");
         try{
-                        switch(code){
-                            case Constants.CODE_SERVER_REGISTER_OK:
-                                System.out.println("Register Ok!");
-                                break;
-                            case Constants.CODE_SERVER_REGISTER_FAILURE:
-                                throw  new Exceptions.ConnectFailure("Connect failure");
-                            default:
-                                System.out.println("LINHA 141 -> NAO ENTREI EM NENHUM DOS CODIGOS"); break;
-                        }
+            socket.receive(packet);
+
+            ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+            ObjectInputStream ois = new ObjectInputStream(bin);
+
+            msgReceived = (MSG)ois.readObject();
+            
+            int code = msgReceived.getMSGCode();
+            System.out.println("DirectoryService receiveRegisterAnswer(): "
+                    +msgReceived.getMSGCode());
+
+            switch(code){
+                case Constants.CODE_SERVER_REGISTER_OK:
+                    System.out.println("Register OK");
+                    return true;
+                case Constants.CODE_SERVER_REGISTER_FAILURE:
+                    throw  new Exceptions.ConnectFailure("Register FAILURE");
+            }
+        }catch(ClassNotFoundException | IOException e){
+            e.printStackTrace();
         }catch(Exceptions.ConnectFailure ex){
-            System.out.println("\ntn"+ex);
-            return false;
+            System.out.println("\n"+ex);
         }finally{
             this.closeSocket();
         }
-        return true;
+        return false;
     }
     
-    public boolean inicializeTCP(int listPort) throws IOException{
-        int sendingPort;
-        
+    public void processClientConnections(){
         serverSocket = null;
         
+        try{
+            serverSocket = new ServerSocket(0);
+            
+            System.out.println("Waiting client connections: "
+                    +InetAddress.getLocalHost().getHostAddress()+":"
+                    +serverSocket.getLocalPort());
+
+            Socket clientSocket = serverSocket.accept();
+            
+            listClientsSockets.add(clientSocket);
+            
+            // LANCAR A THREAD PARA TRATAR DO CLIENTE X
         
-            sendingPort = listPort;
-            //Coloca o serversocket a ouvir no porto de escuta para onde os clietnes irão mandar
-            serverSocket = new ServerSocket();
-            
-            try{
-                        
-                socketToClient = serverSocket.accept();
-            
-            }catch(IOException e){
-                System.out.println("Ocorreu uma excepcao no socket enquanto aguardava por um pedido de ligacao: \n\t" + e);
-                System.out.println("O servidor vai terminar...");
-                return false;
-            }
+        }catch(IOException e){
+            e.printStackTrace();
+        }
         /*    
             //Receber Comando para ficheiro
             
@@ -250,15 +219,11 @@ public class Server{
         }catch(IOException e){
                 System.err.println("ERRO");
         }
-            
-            
-            
-            
-            
-         */       
-        return true;
+
+        */       
     }
     
+    /*
     public final void processRequestsClient() throws IOException{
         Socket toClientSocket;
         BufferedReader in;
@@ -306,68 +271,73 @@ public class Server{
                 }
             }
     }
+    */
     
-    public void closeSocket()
-    {
-        if(socket != null){
-            socket.close();
+    public void closeSocket(){
+        try {
+            if(socket != null)
+                socket.close();
+            if(serverSocket != null)
+                serverSocket.close();
+            for(Socket s : listClientsSockets)
+                if(s != null)
+                    s.close();
+        } catch(IOException e) {
+            e.printStackTrace();
         }
     }
     
-    public static void main(String[] args) throws InterruptedException, ClassNotFoundException, Exceptions.ConnectFailure {
+    public void stopServer(){
+        closeSocket();
+        System.out.println("Server stoped!");
+        System.exit(0);
+    }
+    
+    public static void main(String[] args) {
         InetAddress ip;
         int porto;
-        Server servidor = null;
+        Server server = null;
         String serverName;
         
-        if(args.length != 4){
+        if(args.length != 3){
             System.out.println("Sintaxe: java Servidor Nome ip sendingPort");
             return;
         }
         
         try{
             //Preencher os campos de registo
-            serverName = args[1];
-            ip = InetAddress.getByName(args[2]);
-            porto = Integer.parseInt(args[3]);
+            serverName = args[0];
+            ip = InetAddress.getByName(args[1]);
+            porto = Integer.parseInt(args[2]);
             
             //Registar o Servidor
-            servidor = new Server(serverName, ip, porto); 
-            if(servidor.sendRegister()==true)
-                System.out.println("Servidor Registado com sucesso.");
-            else{
-                System.out.println("NAO ME REGISTEI");
-                throw new IOException();
-            }
+            server = new Server(serverName, ip, porto); 
+            System.out.println("Server "+serverName+" started...\n");
+            server.sendRegister();
+            if(!server.receiveRegisterAnswer())
+                server.stopServer();
             
             //INICIALIZAR A HEARTBEAT THREAD
-            servidor.heartBeat = new HeartbeatThreadSend(ip);
-            servidor.heartBeat.start();
+            server.heartBeat = new HeartbeatThreadSend(ip);
+            server.heartBeat.start();
             
             //INICIALIZA COMUNICAÇÃO TCP
-            //servidor.inicializeTCP(porto);
-            
-            while(true) {
-                System.out.printf("z");
-                
-                //trata clientes
-                
-                Thread.sleep(1000);
-            }
+            server.processClientConnections();
             
         }catch(NumberFormatException e){
             System.out.println("O porto de escuta deve ser um inteiro positivo.");
         }catch(NullPointerException e){
             System.out.println("Null pointer exception apanho do hertbeat." + e);
             e.printStackTrace();
-        }catch(SocketException e){
-            System.out.println("Ocorreu um erro ao nível do socket UDP:\n\t"+e);
         }catch(IOException e){
-            //System.out.println("Ocorreu um erro no registo do servidor:\n\t"+e);
             e.printStackTrace();
-        }finally{
-            if(servidor != null){
-                servidor.closeSocket();
+        }catch(Exception e){
+            System.out.println(e);
+        }
+        //System.out.println("Ocorreu um erro no registo do server:\n\t"+e);
+        finally{
+            if(server != null){
+                server.closeSocket();
             }
         }
     }

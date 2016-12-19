@@ -15,8 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Client {    
     private DatagramSocket udpSocket;
@@ -53,7 +51,7 @@ public class Client {
     public void sendRequestUdp() throws IOException{
         msg = new MSG();
         cmd = new Scanner(System.in).nextLine();
-        String line = Constants.CLIENT + cmd;
+        String line = Constants.CLIENT+" "+cmd;
         fillMsg(line);
         //Implementar o resto
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
@@ -108,6 +106,8 @@ public class Client {
                 serverList.remove(serverName, serverL);
             }
         }
+        
+        System.out.println("\tServer List Updated\n"+listServers());
     }
     
     public String listServers(){
@@ -137,9 +137,8 @@ public class Client {
     }
     
     public void runClient(){
-        
-        try{  
-            while(true){
+        while(true){
+            try{  
                 System.out.print(">>");
                 sendRequestUdp();
                 Object obj = receiveResponseUdp();
@@ -158,9 +157,13 @@ public class Client {
                             case Constants.CODE_LIST_FAILURE:
                                 throw new Exceptions.ListFailure("List Failures");
                             case Constants.CODE_LIST_OK:
-                                if(!msg.getCMD().isEmpty()){
+                                if(!msg.getServersList().isEmpty()){
                                     updateServerList(msg.getServersList());
-                                }
+                                } 
+                                // PARA IMPLEMENTAR POSTERIORMENTE [LISTA_CLIENTES]
+                                //else if(!msg.getClientList().isEmpty()) {
+                                //    updateClientList(/*...*/);
+                                //}
                                 break;
                             case Constants.CODE_CMD_FAILURE: 
                                 throw new Exceptions.CmdFailure(Constants.MSG_CMD_FAILURE);
@@ -185,11 +188,11 @@ public class Client {
                             default:
                                 System.out.println(Constants.MSG_CODE_ERROR); break;
                         }
-                }
+                } 
+            } catch(Exception ex) {
+                System.out.println("\n"+ex);
             }
-        }catch(Exception ex){
-            System.out.println("\ntn"+ex);
-        }finally{
+        //} finally {
             //client.closeUdpSocket();
         }
     }

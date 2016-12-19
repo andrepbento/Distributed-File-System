@@ -1,9 +1,4 @@
 
-import java.util.ArrayList;
-import java.util.List;
-
-
-
 public final class Constants {
     
     private Constants(){}
@@ -12,8 +7,6 @@ public final class Constants {
     public static final long TIME_OUT = 30000;
     public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
     public static final int SENDING_PORT = 9801;
-    
-    
     
     //Names
     public static final String SERVER = "SERVER";
@@ -39,14 +32,8 @@ public final class Constants {
     //HeartbeatThreadReceive
     public static final int LISTENING_PORT = 9801;
     
-    //DirectoryService
-    //public static final String TIME_REQUEST = "TIME";
-    
     //Server
     public static final int MAX_SIZE = 256;
     public static final int CODE_SERVER_REGISTER_FAILURE = 1000;
     public static final int CODE_SERVER_REGISTER_OK = 1001;
-    
-    //Lista para enviar as mensagens
-    public List<String> MENSAGEM = new ArrayList();
 }
