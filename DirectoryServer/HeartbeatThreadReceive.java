@@ -1,5 +1,7 @@
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -7,8 +9,8 @@ import java.net.SocketException;
 import java.util.List;
 
 public class HeartbeatThreadReceive extends Thread {
-    private DatagramSocket socketReceive;
-    private DatagramPacket packetReceive;
+    private DatagramSocket socket;
+    private DatagramPacket packet;
     
     // ISTO É A CÓPIA DO QUE É PASSADO DA FUNCAO proccessReques(), MESMA REFERENCIA, APENAS COPIA DE REFERENCIA
     protected List<ServerInfo> activeServers;
@@ -17,38 +19,46 @@ public class HeartbeatThreadReceive extends Thread {
     protected List<ClientInfo> activeClients;
     
     public HeartbeatThreadReceive(List<ServerInfo> activeServers) throws SocketException{
-        socketReceive = new DatagramSocket(Constants.HB_LISTENING_PORT);
-        socketReceive.setSoTimeout(31000);
-        packetReceive = null;
+        socket = new DatagramSocket(Constants.HB_LISTENING_PORT);
+        packet = null;
         this.activeServers = activeServers;
     }
     
+    public synchronized List<ServerInfo> getActiveServers() {
+        return activeServers;
+    }
+    
+    public synchronized void removeServer(ServerInfo serverInfo) {
+        activeServers.remove(serverInfo);
+    }
+    
     private void setServerLoggedOn(ServerInfo si) {
-        for(ServerInfo s : activeServers)
+        for(ServerInfo s : getActiveServers())
             if(s.equals(si))
                 s.setLogged(true);
     }
     
     @Override
     public void run() {
-        if(socketReceive == null){
+        if(socket == null)
                 return;
-        }
         
         new CheckIfServerIsOn().start();
         new CheckIfClientIsOn().start();
         
         while(true){
             try {
-                packetReceive = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
-                socketReceive.receive(packetReceive);
+                packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
+                socket.receive(packet);
                 
-                String hbReceived = new String(packetReceive.getData());
+                ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
+                ObjectInputStream oin = new ObjectInputStream(bais);
+                MSG receivedMSG = (MSG)oin.readObject();
                 
-                if(hbReceived.equals(Constants.HEARTBEAT_SERVER)) {
+                if(receivedMSG.getCMDarg(0).equals(Constants.HEARTBEAT_SERVER)) {
                     System.out.println(Constants.HEARTBEAT_SERVER+" received!");
-                    setServerLoggedOn(new ServerInfo(packetReceive.getAddress(), packetReceive.getPort()));
-                } else if(hbReceived.equals(Constants.HEARTBEAT_CLIENT)) {
+                    setServerLoggedOn(new ServerInfo(packet.getAddress(), packet.getPort()));
+                } else if(receivedMSG.getCMDarg(0).equals(Constants.HEARTBEAT_CLIENT)) {
                     System.out.println(Constants.HEARTBEAT_CLIENT+" received!");
                     System.out.println("IMPLEMENTAR setClientLoggedOn(/*...*/)");
                     //setClientLoggedOn(new ClientInfo(/*...*/));
@@ -57,8 +67,7 @@ public class HeartbeatThreadReceive extends Thread {
                 
                 // VERIFICAR SE EXISTE NA LISTA O IP DE ONDE FOI RECEBIDO O HB POSTERIORMENTE (HISTÓRICO)
                 
-                System.out.println("Recebi heartbeat de " + packetReceive.getAddress());
-            } catch (IOException ex) {
+            } catch (ClassNotFoundException | IOException ex) {
                 ex.printStackTrace();
             }
         }
@@ -71,21 +80,19 @@ public class HeartbeatThreadReceive extends Thread {
                 while(true) {
                     Thread.sleep(Constants.TIME + 200);
 
-                    synchronized(activeServers) {
-                        for(ServerInfo s : activeServers)
-                            if(!s.isLogged()) {
-                                System.out.println("Server "+s.getName()+" removed!");
-                                activeServers.remove(s);
-                            } else
-                                s.setLogged(false);
+                    for(ServerInfo s : getActiveServers())
+                        if(!s.isLogged()) {
+                            System.out.println("Server "+s.getName()+" removed!");
+                            removeServer(s);
+                        } else
+                            s.setLogged(false);
 
-                        // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
+                    // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
 
-                        System.out.print("Connected servers:  ");
-                        for(ServerInfo s : activeServers)
-                                System.out.print(s.getIp().toString()+ "\t");
-                        System.out.println();
-                    }
+                    System.out.print("Connected servers:  ");
+                    for(ServerInfo s : getActiveServers())
+                            System.out.print(s.getName()+ "\t");
+                    System.out.println();
                 }
             } catch(InterruptedException e) {
                 e.printStackTrace();

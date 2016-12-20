@@ -36,7 +36,7 @@ public class DirectoryService extends Thread {
         try {
             System.out.println("DirectoryService started...\n"
                     +"IP:"+InetAddress.getLocalHost().getHostAddress()
-                    +"\tPort"+Constants.LISTENIGN_PORT+"\n");
+                    +"\tPort:"+Constants.LISTENIGN_PORT+"\n");
         } catch (UnknownHostException ex) {
             ex.printStackTrace();
         }
@@ -298,15 +298,14 @@ public class DirectoryService extends Thread {
                     }
                     else if(receivedMSG.getCMDarg(2).equalsIgnoreCase("-c")){
                         System.out.println("\tList Clients OK\tList sended!");
-                        System.out.println("IMPLEMENTAR O PROCESSAMENTO E ENVIO");
-                        // IMPLEMENTAR ISTO POSTERIORMENTE **********************************************************************************************************************
-                        MSG clientMSG = new MSG(Constants.CODE_LIST_FAILURE);
-                        // clientMSG.setClientList(getLoggedClients());
+                        MSG clientMSG = new MSG(Constants.CODE_LIST_OK);
+                        clientMSG.setClientList(getClientsLogged());
                         sendResponse(clientMSG);
                     }else
                         sendResponse(new MSG(Constants.CODE_LIST_FAILURE));
                 }
                 break;
+                /*
             case Constants.CMD_CONNECT:
                 if(!clientIsLogged(packet.getAddress())){
                     System.out.println("\tConnect FAIL\tNOT LOGGED IN");
@@ -321,7 +320,22 @@ public class DirectoryService extends Thread {
                     if(tryToConnectClientServer(getServer(receivedMSG.getCMDarg(2))))
                         // MANDRA IP PORTO
                     sendClientResponse(Constants.CODE_CONNECT_OK, );
-                    */
+                }
+                break;
+                */
+            case Constants.CMD_CHAT:
+                if(!clientIsLogged(packet.getAddress())){
+                    System.out.println("\tChat FAIL\tNOT LOGGED IN");
+                    sendResponse(new MSG(Constants.CODE_LOGIN_NOT_LOGGED_IN));
+                    break;
+                }
+                if(receivedMSG.getCMD().size() < 3){
+                    System.out.println("\tChat FAIL\tCMD WRONG");
+                    sendResponse(new MSG(Constants.CODE_CONNECT_FAILURE));
+                } else {
+                    if(receivedMSG.getCMDarg(1).equals("-all")){
+                        
+                    }
                 }
                 break;
             default:
@@ -382,6 +396,14 @@ public class DirectoryService extends Thread {
             if(c.isLogged())
                 return true;
         return false;
+    }
+    
+    private List<ClientInfo> getClientsLogged() {
+        List<ClientInfo> clientsLogged = new ArrayList<>();
+        for(ClientInfo ci : getClientsList())
+            if(ci.isLogged())
+                clientsLogged.add(ci);
+        return clientsLogged;
     }
     
     private boolean logInClient(String username, String password, 

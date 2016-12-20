@@ -5,7 +5,7 @@ public class ServerInfo {
     private String name;
     private InetAddress ip;
     private int port;
-    private boolean logged;    
+    private boolean logged;
 
     public ServerInfo(String name, InetAddress ip, int port) {
         this.name = name;
@@ -55,7 +55,7 @@ public class ServerInfo {
         return logged;
     }
 
-    public void setLogged(boolean logged) {
+    public synchronized void setLogged(boolean logged) {
         this.logged = logged;
     }  
     
