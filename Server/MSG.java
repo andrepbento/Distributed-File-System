@@ -39,4 +39,10 @@ public class MSG implements Serializable {
     public int getMSGCode() {
         return this.msgCode;
     }
+     
+    public String getCMDarg(int argIndex) {
+        if(argIndex < cmd.size())
+            return cmd.get(argIndex);
+        return null;
+    } 
 }

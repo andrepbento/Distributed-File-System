@@ -13,6 +13,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,23 +28,27 @@ import java.util.logging.Logger;
  *
  * @author Jorge
  */
-public class processClientRequest extends Thread {
+public class ProcessClientRequest extends Thread {
     
     private ServerSocket serverSocket;
     Socket toClientSocket;
     BufferedReader in;
     PrintWriter out;
-    String request;
+    String directoryPath;
+    private List<String> cmd;
     
-    public processClientRequest(ServerSocket serverSocket, Socket toClientSocket) throws SocketException{
+    public ProcessClientRequest(ServerSocket serverSocket, Socket toClientSocket) throws SocketException{
         this.serverSocket = serverSocket;
         this.toClientSocket = toClientSocket;
+        cmd = new ArrayList<>();
     }
     @Override
     public void run() {
         ObjectInputStream in;
         ObjectOutputStream out;
         MSG request;
+        ClientInfo requestClientInfo;
+        boolean run = true;
         
         if(serverSocket == null){
             return;
@@ -51,16 +56,21 @@ public class processClientRequest extends Thread {
         
         System.out.println("TCP conection started [PORT: " + serverSocket.getLocalPort()+"]");
         
-        while (true) {
+        while (run) {
 
             try {
                 out = new ObjectOutputStream(toClientSocket.getOutputStream());
                 in = new ObjectInputStream(toClientSocket.getInputStream());
+                
+                requestClientInfo = (ClientInfo) (in.readObject());
+                
+                //if(requestClientInfo.getUsername())
 
                 request = (MSG) (in.readObject());
 
                 if (request == null) {
                     toClientSocket.close();
+                    run = false;
                     continue;
                 }
 
@@ -69,36 +79,34 @@ public class processClientRequest extends Thread {
                         + ":" + toClientSocket.getLocalPort()); //trim apaga os espaços brancos
 
                 //TRATA DOS CLIENTES POSTERIORMENTE
-                /*if (request.getCMD().size() < 2) {
-                    
+                if (request.getCMD().size() < 2) {
+                    MSG msg = new MSG();
+                    msg.setMSGCode(Constants.CODE_CMD_NOT_RECOGNIZED);
                     out.writeObject(msg);
                     out.flush();
                     return;
                 }
-
-                switch () {
-                    case :
-                        
+                
+                switch (request.getCMDarg(0)) {
+                    case "CD":
+                        System.out.println("RECEBI UM CD COMO PRIMEIRO ARGUMENTO");
                         break;
-                    case :
-                        
+                    case "COPY":
+                        System.out.println("RECEBI UM COPY COMO PRIMEIRO ARGUMENTO");
                         break;
-                    case :
-                        
-                        break;
-                    case :
-                        
+                    case "CP":
+                        System.out.println("RECEBI UM COPY COMO PRIMEIRO ARGUMENTO");
                         break;
                     default:
-                        System.out.println("CALMA QUE EU CHEGUEI AO DEFAULT");
+                        System.out.println("CALMA QUE EU CHEGUEI AO DEFAULT E NÃO DEVO TER ENCONTRADO NADA");
                 }
-                */
+                
             }catch(IOException e){
                 System.out.println("Erro na comunicacao como o cliente " + 
                                 toClientSocket.getInetAddress().getHostAddress() + ":" + 
                                     toClientSocket.getPort()+"\n\t" + e);
             }catch (ClassNotFoundException ex) {
-                Logger.getLogger(processClientRequest.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex);
             }finally{
                 try{
                   toClientSocket.close();
