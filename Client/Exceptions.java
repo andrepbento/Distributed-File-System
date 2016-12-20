@@ -11,76 +11,42 @@
 public class Exceptions{
     //CMD
     static class CmdFailure extends Exception{
-
-        public CmdFailure(String message){
-           super(message);
-        }
+        public CmdFailure(){ super("Invalid arguments"); }
     }
     
     static class CmdNotRecognized extends Exception{
-
-          public CmdNotRecognized(String message){
-             super(message);
-          }
+        public CmdNotRecognized(){ super("Command not recognized"); }
     }
     
     //REGISTER
     static class RegisterFailure extends Exception{
-
-          public RegisterFailure(String message){
-             super(message);
-          }
+        public RegisterFailure(){ super("You're missing some parameters"); }
     }
     
     static class RegisterClientAlreadyExists extends Exception{
-
-          public RegisterClientAlreadyExists(String message){
-             super(message);
-          }
+        public RegisterClientAlreadyExists(){ super("The username you're trying to regist already exists"); }
     }
     
-    //LOGIN
-    static class LoginOk extends Exception{
-
-          public LoginOk(String message){
-             super(message);
-          }
-    }
-    
+    //LOGIN    
     static class LoginFailure extends Exception{
-
-          public LoginFailure(String message){
-             super(message);
-          }
+        public LoginFailure(){ super("Check your username or password"); }
     }
     
     static class AlreadyLoggedIn extends Exception{
-
-          public AlreadyLoggedIn(String message){
-             super(message);
-          }
+        public AlreadyLoggedIn(){ super("You're already logged in"); }
     }
     
     static class NotLoggedIn extends Exception{
-
-          public NotLoggedIn(String message){
-             super(message);
-          }
+        public NotLoggedIn(){ super("You need to login first"); }
     }
     
     //List
     static class ListFailure extends Exception{
-
-          public ListFailure(String message){
-             super(message);
-          }
+        public ListFailure(){ super("List Failures"); }
     }
     
     //Connect
     static class ConnectFailure extends Exception{
-
-          public ConnectFailure(String message){
-             super(message);
-          }
+        public ConnectFailure(){ super("Connect failure"); }
     }
 }

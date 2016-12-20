@@ -15,34 +15,24 @@ public final class Constants {
     public static final String CMD_LIST = "LIST";
     
         //Client Codes
-    public static final String MSG_CODE_ERROR = "Code Error";
     // [0 - 99] CMD
     public static final int CODE_CMD_FAILURE = 0;
-    public static final String MSG_CMD_FAILURE = "Invalid arguments";
     
     public static final int CODE_CMD_NOT_RECOGNIZED = 1;
-    public static final String MSG_CMD_NOT_RECODNIZED = "Command not recognized";
     // [100 - 199] REGISTER
     public static final int CODE_REGISTER_FAILURE = 100;
-    public static final String MSG_REGISTER_FAILURE = "You're missing some parameters";
     
     public static final int CODE_REGISTER_OK = 101;
-    public static final String MSG_REGISTER_OK = "You're now registered";
     
     public static final int CODE_REGISTER_CLIENT_ALREADY_EXISTS = 102;
-    public static final String MSG_REGISTER_CLIENT_ALREADY_EXISTS = "The username you're trying to regist already exists";
     // [200-299] LOGIN
     public static final int CODE_LOGIN_OK = 203;
-    public static final String MSG_LOGIN_OK = "You logged in";
     
     public static final int CODE_LOGIN_FAILURE = 200;
-    public static final String MSG_LOGIN_FAILURE = "Check your username or password";
     
     public static final int CODE_LOGIN_ALREADY_LOGGED = 201;
-    public static final String MSG_LOGIN_ALREADY_LOGGED = "You're already logged in";
     
     public static final int CODE_LOGIN_NOT_LOGGED_IN = 202;
-    public static final String MSG_LOGIN_NOT_LOGGED_IN = "You need to login first";
     // [300-399] LOGOUT
     public static final int CODE_LOGOUT_OK = 300;
     // [400-499] LIST
