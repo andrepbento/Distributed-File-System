@@ -6,13 +6,14 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.List;
 
 public class HeartbeatThreadReceive extends Thread {
     private DatagramSocket socket;
     private DatagramPacket packet;
     
-    // ISTO É A CÓPIA DO QUE É PASSADO DA FUNCAO proccessReques(), MESMA REFERENCIA, APENAS COPIA DE REFERENCIA
     protected List<ServerInfo> activeServers;
     protected List<ServerInfo> serverHistory;
     
@@ -24,16 +25,8 @@ public class HeartbeatThreadReceive extends Thread {
         this.activeServers = activeServers;
     }
     
-    public synchronized List<ServerInfo> getActiveServers() {
-        return activeServers;
-    }
-    
-    public synchronized void removeServer(ServerInfo serverInfo) {
-        activeServers.remove(serverInfo);
-    }
-    
     private void setServerLoggedOn(ServerInfo si) {
-        for(ServerInfo s : getActiveServers())
+        for(ServerInfo s : activeServers)
             if(s.equals(si))
                 s.setLogged(true);
     }
@@ -78,21 +71,28 @@ public class HeartbeatThreadReceive extends Thread {
         public void run() {
             try {
                 while(true) {
-                    Thread.sleep(Constants.TIME + 200);
+                    try {
+                        Thread.sleep(Constants.TIME + 1000);
 
-                    for(ServerInfo s : getActiveServers())
-                        if(!s.isLogged()) {
-                            System.out.println("Server "+s.getName()+" removed!");
-                            removeServer(s);
-                        } else
-                            s.setLogged(false);
+                        Iterator<ServerInfo> it = activeServers.iterator();
+                        while(it.hasNext()) {
+                            ServerInfo si = it.next();
+                            if(!si.isLogged()) {
+                                System.out.println("Server "+si.getName()+" removed!");
+                                it.remove();
+                            } else
+                                si.setLogged(false);
+                        }
 
-                    // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
+                        // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
 
-                    System.out.print("Connected servers:  ");
-                    for(ServerInfo s : getActiveServers())
-                            System.out.print(s.getName()+ "\t");
-                    System.out.println();
+                        System.out.print("\nConnected servers:");
+                        for(ServerInfo s : activeServers)
+                                System.out.println(s.getName());
+                        System.out.println();
+                    } catch(ConcurrentModificationException e) {
+                        System.out.println("CONCURRENT MODIFICATION EXCEPTION ***********************************************************************************************");
+                    }
                 }
             } catch(InterruptedException e) {
                 e.printStackTrace();
@@ -105,7 +105,7 @@ public class HeartbeatThreadReceive extends Thread {
         public void run() {
             try {
                 while(true) {
-                    Thread.sleep(Constants.TIME + 200);
+                    Thread.sleep(Constants.TIME + 1000);
                 /*
                 for(ClientInfo c : activeClients)
                     if(!c.isLogged())

@@ -12,6 +12,10 @@ public class ClientInfo implements Serializable {
     private InetAddress clientAddress;
     private boolean logged;
     
+    public ClientInfo(String username){
+        this.username = username;
+    }
+    
     public ClientInfo(InetAddress clientAddress){
         this.clientAddress = clientAddress;
     }

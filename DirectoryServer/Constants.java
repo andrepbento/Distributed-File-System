@@ -49,6 +49,7 @@ public final class Constants {
     //Server Codes
     public static final int CODE_SERVER_REGISTER_FAILURE = 1000;
     public static final int CODE_SERVER_REGISTER_OK = 1001;
+    public static final int CODE_SERVER_HEATHBEAT_OK = 1002;
 
     //HeartbeatThreadReceive
     public static final long TIME = 30000;

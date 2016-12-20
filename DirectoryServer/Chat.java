@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.List;
 
 
@@ -56,15 +57,26 @@ public class Chat {
         }
     }
     
-    /* FALTA IMPLEMENTAR ISTO (NÃO TIVE TEMPO)
     public void sendChatMSGToDesignatedClients(MSG msg, String clients) {
+        /*
         clients.trim();
         String[] clientsUsernames = clients.split(",");
-        for(ClientInfo ci : activeClients) {
-            if(ci.equals(new Client(clientsUsernames)){
-            
+        for(int i = 0; i < clientsUsernames.length; i++) {
+            for(ClientInfo ci : activeClients) {
+                if(ci.equals(new ClientInfo(clientsUsernames[i]))){
+                    packet.setAddress(ci.getClientAddress());
+                    packet.setPort(NUMBER_XPTO);
+                    try {
+                        socket = new DatagramSocket();
+                        socket.send(packet);
+                    } catch (SocketException ex) {
+                        ex.printStackTrace();
+                    } catch (IOException ex) {
+                        
+                    }
+                }
             }
         }
+        */
     }
-    */
 }
