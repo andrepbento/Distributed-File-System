@@ -39,6 +39,7 @@ public class Server{
     //static List<HeartbeatThreadSend> heartBeatList;
     private HeartbeatThreadSend heartBeat;
     private ServerSocket serverSocket;
+    private List<processClientRequest> listClientsPRequest;
     private List<Socket> listClientsSockets;
     private MSG msgReceived;
     
@@ -133,145 +134,20 @@ public class Server{
             listClientsSockets.add(clientSocket);
             
             // LANCAR A THREAD PARA TRATAR DO CLIENTE X
+            //PRIMEIRO CRIA A FUNÇÃO QUE VAI ATENDER ESSE CLIENTE
+            processClientRequest newClient = new processClientRequest(serverSocket, clientSocket);
+            
+            //GUARDA A FUNÇÃO E O SOCKET PARA ESSE CLIENTE
+            this.listClientsPRequest.add(newClient);
+            this.listClientsSockets.add(clientSocket);
+            
+            //INICIA A THREAD
+            newClient.start();
         
         }catch(IOException e){
             e.printStackTrace();
         }
-        /*    
-            //Receber Comando para ficheiro
-            
-            File localDirectory;
-            String fileName, localFilePath = null;
-            FileOutputStream localFileOutputStream = null;
-            Socket socketToClient = null;
-            PrintWriter pout;
-            InputStream in;
-            byte []fileChunck = new byte[Constants.MAX_SIZE];
-            int nbytes;      
-
-            if(msgReceived.getCMD().size() != 4){
-                System.out.println("Sintaxe: CLIENT FILE_NAME FILE_PATH_LOCATION");
-                return false;
-            }        
-
-            fileName = msgReceived.getCMD().get(2).trim();
-            localDirectory = new File(msgReceived.getCMD().get(3).trim());
-
-            if(!localDirectory.exists()){
-                System.out.println("A directoria " + localDirectory + " nao existe!");
-                return false;
-            }
-
-            if(!localDirectory.isDirectory()){
-                System.out.println("O caminho " + localDirectory + " nao se refere a uma directoria!");
-                return false;
-            }
-
-            if(!localDirectory.canWrite()){
-                System.out.println("Sem permissoes de escrita na directoria " + localDirectory);
-                return false;
-            }
-
-            try{
-                try{
-
-                    localFilePath = localDirectory.getCanonicalPath()+File.separator+fileName;
-                    localFileOutputStream = new FileOutputStream(localFilePath);
-                    System.out.println("Ficheiro " + localFilePath + " criado.");
-
-                }catch(IOException e){
-
-                    if(localFilePath == null){
-                        System.out.println("Ocorreu a excepcao {" + e +"} ao obter o caminho canonico para o ficheiro local!");   
-                    }else{
-                        System.out.println("Ocorreu a excepcao {" + e +"} ao tentar criar o ficheiro " + localFilePath + "!");
-                    }
-
-                    return false;
-                }
-
-                try{
-
-                    //FALTA PREENCHER OS CAMPOS DO IP E PORTO
-                    socketToClient = new Socket(args[0], serverPort);
-
-                    socketToClient.setSoTimeout((int) (Constants.TIME_OUT*1000));
-
-                    in = socketToClient.getInputStream();
-                    pout = new PrintWriter(socketToClient.getOutputStream(), true);
-
-                    pout.println(fileName);
-                    pout.flush();
-
-                    while((nbytes = in.read(fileChunck)) > 0){                    
-                        //System.out.println("Recebido o bloco n. " + ++contador + " com " + nbytes + " bytes.");
-                        localFileOutputStream.write(fileChunck, 0, nbytes);
-                        //System.out.println("Acrescentados " + nbytes + " bytes ao ficheiro " + localFilePath+ ".");                    
-                    }                    
-
-                    System.out.println("Transferencia concluida.");
-
-                }catch(UnknownHostException e){
-                     System.out.println("Destino desconhecido:\n\t"+e);
-                } 
-
-        return true;
-        }catch(IOException e){
-                System.err.println("ERRO");
-        }
-
-        */       
     }
-    
-    /*
-    public final void processRequestsClient() throws IOException{
-        Socket toClientSocket;
-        BufferedReader in;
-        PrintWriter out;
-        String request;
-        
-        if(serverSocket == null){
-            return;
-        }
-        
-        System.out.println("TCP conection started [PORT: " + socket.getLocalPort()+"]");
-        
-        while(true){
-            try{
-                toClientSocket = serverSocket.accept();
-            }catch(IOException e){
-                System.out.println("ERROR while waiting for a conection request:\n\t");
-                return;
-            }
-            try{
-                out = new PrintWriter(toClientSocket.getOutputStream(),true);
-                in = new BufferedReader(new InputStreamReader(toClientSocket.getInputStream()));
-                
-                request = in.readLine();
-                
-                if(request == null){
-                    toClientSocket.close();
-                    continue;
-                }
-                
-                System.out.println("Recebido \"" + request.trim() + 
-                "\" de " + toClientSocket.getInetAddress().getHostAddress() 
-                + ":" + toClientSocket.getLocalPort()); //trim apaga os espaços brancos
-                
-                //TRATA DOS CLIENTES POSTERIORMENTE
-                //           ( . . . )
-            }catch(IOException e){
-                System.out.println("Erro na comunicacao como o cliente " + 
-                                toClientSocket.getInetAddress().getHostAddress() + ":" + 
-                                    toClientSocket.getPort()+"\n\t" + e);
-                }finally{
-                        try{
-                            toClientSocket.close();
-                        }catch(IOException e){}
-                }
-            }
-    }
-    */
     
     public void closeSocket(){
         try {
