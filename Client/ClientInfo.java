@@ -10,6 +10,7 @@ public class ClientInfo implements Serializable {
     private String username;
     private String password;
     private InetAddress clientAddress;
+    private int chatDatagramSocketPort;
     private boolean logged;
     
     public ClientInfo(String username){
@@ -39,6 +40,14 @@ public class ClientInfo implements Serializable {
     public String getPassword() { return password; }
 
     public InetAddress getClientAddress() { return clientAddress; }
+
+    public int getChatDatagramSocketPort() {
+        return chatDatagramSocketPort;
+    }
+
+    public void setChatDatagramSocketPort(int chatDatagramSocketPort) {
+        this.chatDatagramSocketPort = chatDatagramSocketPort;
+    }
     
     public boolean isLogged() { return logged; }
     

@@ -49,4 +49,9 @@ public class Exceptions{
     static class ConnectFailure extends Exception{
         public ConnectFailure(){ super("Connect failure"); }
     }
+    
+    //Chat
+    static class ChatFailure extends Exception{
+        public ChatFailure(){ super("Chat failure"); }
+    }
 }
