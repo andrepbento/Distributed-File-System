@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -14,19 +13,18 @@ public class HeartbeatThreadReceive extends Thread {
     private DatagramSocket socket;
     private DatagramPacket packet;
     
-    protected List<ServerInfo> activeServers;
-    protected List<ServerInfo> serverHistory;
+    // VER O QUE FAZER COM ISTO POSTERIORMENTE
+    //protected List<ServerInfo> serverHistory;
     
     protected List<ClientInfo> activeClients;
     
-    public HeartbeatThreadReceive(List<ServerInfo> activeServers) throws SocketException{
+    public HeartbeatThreadReceive() throws SocketException{
         socket = new DatagramSocket(Constants.HB_LISTENING_PORT);
         packet = null;
-        this.activeServers = activeServers;
     }
     
     private void setServerLoggedOn(ServerInfo si) {
-        for(ServerInfo s : activeServers)
+        for(ServerInfo s : DirectoryService.serversList)
             if(s.equals(si))
                 s.setLogged(true);
     }
@@ -74,7 +72,7 @@ public class HeartbeatThreadReceive extends Thread {
                     try {
                         Thread.sleep(Constants.TIME + 1000);
 
-                        Iterator<ServerInfo> it = activeServers.iterator();
+                        Iterator<ServerInfo> it = DirectoryService.serversList.iterator();
                         while(it.hasNext()) {
                             ServerInfo si = it.next();
                             if(!si.isLogged()) {
@@ -86,12 +84,15 @@ public class HeartbeatThreadReceive extends Thread {
 
                         // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
 
-                        System.out.print("\nConnected servers:");
-                        for(ServerInfo s : activeServers)
-                                System.out.println(s.getName());
+                        System.out.print("\nConnected servers:\n");
+                        int i = 1;
+                        for(ServerInfo s : DirectoryService.serversList){
+                            System.out.println(i+" - "+s.getName());
+                            i++;
+                        }
                         System.out.println();
                     } catch(ConcurrentModificationException e) {
-                        System.out.println("CONCURRENT MODIFICATION EXCEPTION ***********************************************************************************************");
+                        e.printStackTrace();
                     }
                 }
             } catch(InterruptedException e) {

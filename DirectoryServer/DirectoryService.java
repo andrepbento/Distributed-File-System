@@ -23,9 +23,11 @@ import java.util.List;
 public class DirectoryService extends Thread {
     private DatagramSocket socket;
     private DatagramPacket packet;
-    private List<ServerInfo> serversList;
+    protected static List<ServerInfo> serversList;
     private boolean hbThreadIsRunning = false;
-    private List<ClientInfo> clientsList;
+    protected static List<ClientInfo> clientsList;
+    
+    private Chat clientsChat;
     
     public DirectoryService() throws SocketException{
         socket = null;
@@ -33,6 +35,7 @@ public class DirectoryService extends Thread {
         socket = new DatagramSocket(Constants.LISTENIGN_PORT);
         serversList = new ArrayList<>();
         clientsList = loadClientsList();
+        clientsChat = new Chat();
         try {
             System.out.println("DirectoryService started...\n"
                     +"IP:"+InetAddress.getLocalHost().getHostAddress()
@@ -97,7 +100,7 @@ public class DirectoryService extends Thread {
             }
         } catch(IOException | NumberFormatException e){
             e.printStackTrace();
-        } finally{
+        } finally {
             closeSocket();
         }
     }
@@ -138,7 +141,7 @@ public class DirectoryService extends Thread {
                         +ip+":"+port);
                 serverResponse.setMSGCode(Constants.CODE_SERVER_REGISTER_OK);
                 if(!hbThreadIsRunning){
-                    new HeartbeatThreadReceive(serversList).start();
+                    new HeartbeatThreadReceive().start();
                     hbThreadIsRunning = true;
                 }
             }
@@ -259,7 +262,7 @@ public class DirectoryService extends Thread {
                     System.out.println("\tLogin FAIL");
                     sendResponse(new MSG(Constants.CODE_LOGIN_FAILURE));
                 }else{
-                    if(logInClient(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3), packet.getAddress())) {
+                    if(logInClient(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3), receivedMSG.getCMDarg(4), packet.getAddress())) {
                         System.out.println("\tLogin Client OK\t"+receivedMSG.getCMDarg(2)+","+receivedMSG.getCMDarg(3));
                         sendResponse(new MSG(Constants.CODE_LOGIN_OK));
                     }else{
@@ -314,10 +317,27 @@ public class DirectoryService extends Thread {
                 }
                 if(receivedMSG.getCMD().size() < 3){
                     System.out.println("\tChat FAIL\tCMD WRONG");
-                    sendResponse(new MSG(Constants.CODE_CONNECT_FAILURE));
+                    sendResponse(new MSG(Constants.CODE_CMD_FAILURE));
                 } else {
-                    if(receivedMSG.getCMDarg(1).equals("-all")){
-                        
+                    MSG chatMSG = new MSG();
+                    List<String> msgContent = new ArrayList<>();
+                    msgContent.add(receivedMSG.getCMDarg(1));
+                    msgContent.add(receivedMSG.getCMDarg(2));
+                    chatMSG.setCMD(msgContent);
+                    if(receivedMSG.getCMDarg(2).equals("-all")){
+                        if(clientsChat.sendChatMSGToAll(
+                                getClient(packet.getAddress()).getUsername(),
+                                chatMSG))
+                            sendResponse(new MSG(Constants.CODE_CHAT_OK));
+                        else
+                            sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
+                    } else {
+                        if(clientsChat.sendChatMSGToDesignatedClients(
+                                getClient(packet.getAddress()).getUsername(), 
+                                chatMSG))
+                            sendResponse(new MSG(Constants.CODE_CHAT_OK));
+                        else
+                            sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
                     }
                 }
                 break;

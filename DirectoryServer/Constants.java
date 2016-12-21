@@ -45,6 +45,9 @@ public final class Constants {
     // [500-599] CONNECT
     public static final int CODE_CONNECT_FAILURE = 501;
     public static final int CODE_CONNECT_OK = 502;
+    // [600-699] CHAT
+    public static final int CODE_CHAT_FAILURE = 601;
+    public static final int CODE_CHAT_OK = 602;
     
     //Server Codes
     public static final int CODE_SERVER_REGISTER_FAILURE = 1000;
@@ -57,4 +60,7 @@ public final class Constants {
     public static final int HB_LISTENING_PORT = 9801;
     public static final String HEARTBEAT_CLIENT = "HEARTBEAT_CLIENT";
     public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
+    
+    //Chat
+    public static final int REC_CHAT_PORT = 9802;
 }
