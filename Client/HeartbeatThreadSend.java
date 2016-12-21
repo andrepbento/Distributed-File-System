@@ -17,18 +17,14 @@ public class HeartbeatThreadSend extends Thread{
     @Override
     public void run() {
         
-        if(socketSend == null){
-                return;
-        }
+        if(socketSend == null) return;
         
         while(true){
             try {
                 socketSend.send(packetSend);
                 Thread.sleep(Constants.TIME);
-            } catch (IOException ex) {
-                System.out.println("Thread interrupted (Sleep)\n\t"+ex);
-            } catch (InterruptedException ex) {
-                System.out.println("Thread interrupted (Sleep)\n\t"+ex);
+            } catch (IOException | InterruptedException ex) {
+                System.out.println("\n\t"+ex);
             }finally{
                 socketSend.close();
             }  

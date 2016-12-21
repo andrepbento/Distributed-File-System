@@ -32,18 +32,19 @@ import java.util.List;
  */
 public class Server{
     private String name;
-    private DatagramSocket socket;
+    private static DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
     private InetAddress ip;
     private int sendingPort;
     //static List<HeartbeatThreadSend> heartBeatList;
     private HeartbeatThreadSend heartBeat;
     private ServerSocket serverSocket;
-    private List<processClientRequest> listClientsPRequest;
+    private List<ProcessClientRequest> listClientsPRequest;
     private List<Socket> listClientsSockets;
     private MSG msgReceived;
+
     
-    public Server(String name, InetAddress ip, int sendingPort) throws SocketException 
+    public Server(String name, InetAddress ip, int sendingPort) throws SocketException, IOException 
     {
         this.name = name;
         this.ip = ip;
@@ -51,6 +52,7 @@ public class Server{
         packet = null;
         socket = new DatagramSocket();
         listClientsSockets = new ArrayList<>();
+        serverSocket = new ServerSocket(0);
     }
 
     //Regista-se mas se já ouver um server com o mesmo nome não regista
@@ -69,6 +71,7 @@ public class Server{
             //ADICIONAR OS COMANDS A LIST
             listSend.add(Constants.SERVER);
             listSend.add(this.name);
+            listSend.add(String.valueOf(serverSocket.getLocalPort()));
             
             //ADICIONAR A LIST A MSG
             mesageSend.setCMD(listSend);
@@ -91,7 +94,9 @@ public class Server{
     public boolean receiveRegisterAnswer(){
         packet = new DatagramPacket(new byte[Constants.MAX_SIZE],Constants.MAX_SIZE);
         try{
+            socket.setSoTimeout(3000);
             socket.receive(packet);
+            
 
             ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
             ObjectInputStream ois = new ObjectInputStream(bin);
@@ -114,16 +119,15 @@ public class Server{
         }catch(Exceptions.ConnectFailure ex){
             System.out.println("\n"+ex);
         }finally{
-            this.closeSocket();
+            //this.closeSocket();
         }
         return false;
     }
     
     public void processClientConnections(){
-        serverSocket = null;
         
         try{
-            serverSocket = new ServerSocket(0);
+            
             
             System.out.println("Waiting client connections: "
                     +InetAddress.getLocalHost().getHostAddress()+":"
@@ -135,7 +139,7 @@ public class Server{
             
             // LANCAR A THREAD PARA TRATAR DO CLIENTE X
             //PRIMEIRO CRIA A FUNÇÃO QUE VAI ATENDER ESSE CLIENTE
-            processClientRequest newClient = new processClientRequest(serverSocket, clientSocket);
+            ProcessClientRequest newClient = new ProcessClientRequest(serverSocket, clientSocket);
             
             //GUARDA A FUNÇÃO E O SOCKET PARA ESSE CLIENTE
             this.listClientsPRequest.add(newClient);
@@ -194,7 +198,7 @@ public class Server{
                 server.stopServer();
             
             //INICIALIZAR A HEARTBEAT THREAD
-            server.heartBeat = new HeartbeatThreadSend(ip);
+            server.heartBeat = new HeartbeatThreadSend(ip, socket);
             server.heartBeat.start();
             
             //INICIALIZA COMUNICAÇÃO TCP
