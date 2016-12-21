@@ -36,7 +36,6 @@ public class Client {
         this.directoryServicePort = directoryServicePort;
         serverList = new HashMap<>();
         currentPath = "DS";
-        chatThread = new ChatThreadReceive();
     }
     
     public InetAddress getDirectoryServiceIp() { return directoryServiceIp; }
@@ -163,14 +162,16 @@ public class Client {
     private void processDirectoryServiceCommand(MSG msg){
         switch(msg.getMSGCode()){
             case Constants.CODE_LOGOUT_OK: 
-                if(chatThread != null)
+                if(chatThread != null){
                     chatThread.terminate();
+                    chatThread = null;
+                }
                 System.out.println("You logged out"); 
                 break;
             case Constants.CODE_LOGIN_OK:  
                 if(chatThread == null){
+                    chatThread = new ChatThreadReceive();
                     chatThread.start();
-                    
                 }
                 System.out.println("Logged in"); 
                 break;

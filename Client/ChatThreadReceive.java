@@ -37,6 +37,8 @@ public class ChatThreadReceive extends Thread{
             return;
         }
 
+        System.out.println("Thread chegou aqui");
+        
         try{
             while(running){
                 packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);  
