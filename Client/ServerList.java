@@ -26,8 +26,12 @@ public class ServerList {
         return serverInfo.getIp();
     }
 
+    public int getDatagramPort() {
+        return serverInfo.getDatagramSocketPort();
+    }
+    
     public int getServerPort() {
-        return serverInfo.getPort();
+        return serverInfo.getServerSocketPort();
     }
 
     public Socket getSocket() {

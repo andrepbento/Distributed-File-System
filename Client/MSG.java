@@ -3,10 +3,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author andre
- */
 public class MSG implements Serializable {
     static final long serialVersionUID = 1010L;
     private int msgCode;
@@ -47,6 +43,10 @@ public class MSG implements Serializable {
             return cmd.get(argIndex);
         return null;
     } 
+    
+    public int getCmdSize(){
+        return cmd.size();
+    }
     
     public void setCMD(List<String> cmd) {
         this.cmd = cmd;
