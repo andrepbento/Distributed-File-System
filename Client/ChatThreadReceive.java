@@ -36,11 +36,10 @@ public class ChatThreadReceive extends Thread{
         if(!running || socket == null){
             return;
         }
-
+        
         try{
             while(running){
                 packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);  
-                System.out.println("A espera...");
                 socket.receive(packet);
                 System.out.println("(" + packet.getAddress().getHostAddress() + ":" + packet.getPort() + ") ");
                 

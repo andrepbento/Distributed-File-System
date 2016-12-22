@@ -1,24 +1,43 @@
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 
 
-public class ServerList {
-    ServerInfo serverInfo;
-    Socket socket;
-    String currentPath;
+public class ServerConnection {
+    private ServerInfo serverInfo;
+    private Socket socket;
+    private String currentPath;
+    private boolean connected;
 
-    public ServerList(ServerInfo serverInfo, Socket socket) {
+    public ServerConnection(ServerInfo serverInfo, Socket socket) {
         this.serverInfo = serverInfo;
         this.socket = socket;
         this.currentPath = null;
+        this.connected = false;
     }
 
+    public void createSocket(){
+        try {
+            socket = new Socket(serverInfo.getIp(), serverInfo.getServerSocketPort());
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public boolean isConnected() {
+        return connected;
+    }
+
+    public void setConnected(boolean connected) {
+        this.connected = connected;
+    }
+    
     public ServerInfo getServerInfo() {
         return serverInfo;
     }
     
-     public String getServerName() {
+    public String getServerName() {
         return serverInfo.getName();
     }
 
