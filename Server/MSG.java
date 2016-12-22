@@ -21,6 +21,10 @@ public class MSG implements Serializable {
         return cmd;
     }
     
+    public int getCmdSize(){
+        return cmd.size();
+    }
+    
     public String toStringCMD() {
         String aux = "";
         for(int i = 0; i < cmd.size(); i++)
