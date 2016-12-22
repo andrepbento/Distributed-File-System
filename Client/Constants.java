@@ -14,7 +14,10 @@ public final class Constants {
     public static final String CMD_LOGOUT = "LOGOUT";
     public static final String CMD_LIST = "LIST";
     
-        //Client Codes
+    public static final String CMD_CONNECT = "CONNECT";
+    public static final String DS = "DS";
+    
+        //Directory Service Codes
     // [0 - 99] CMD
     public static final int CODE_CMD_FAILURE = 0;
     public static final int CODE_CMD_NOT_RECOGNIZED = 1;
@@ -37,16 +40,22 @@ public final class Constants {
     public static final int CODE_LIST_FAILURE = 401;
     public static final int CODE_LIST_OK = 402;
     
-    // [500-599] CONNECT
-    public static final int CODE_CONNECT_FAILURE = 501;
-    public static final int CODE_CONNECT_OK = 502;
-    
     
     // [600-699] CHAT
     public static final int CODE_CHAT_FAILURE = 601;
     public static final int CODE_CHAT_OK = 602;
     
-    //DirectoryService
+        //Server
+    // [500-599] CONNECT
+    public static final int CODE_CONNECT_FAILURE = 501;
+    public static final int CODE_CONNECT_OK = 502;
+    
+        //Client
+    public static final int CODE_SERVER_DOESNT_EXIST = 701;
+    public static final int CODE_SERVER_ALREADY_CONNECTED = 702;
+    
+    
+        //DirectoryService
     public static final int SENDING_PORT_SD = 9801;
     public static final int MAX_SIZE = 2048;
     
