@@ -52,8 +52,8 @@ public final class Constants {
     
     
     //HeadBeatThreadSend
-    public static final long TIME = 30 * 1000;
-    public static final String HEARTBEAT_CLIENT = "HEARTBEAT_CLIENTE";
+    public static final long TIME = 30000;
+    public static final String HEARTBEAT_CLIENT = "HEARTBEAT_CLIENT";
     public static final int SENDING_PORT_HB = 9801;
     
     //ChatThreadSend

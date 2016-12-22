@@ -25,6 +25,7 @@ public class Client {
     private MSG msg;
     private String currentPath;
     ChatThreadReceive chatThread;
+    HeartbeatThreadSend heartBeatThread;
     
     Map<String, ServerList> serverList;
     List<ClientInfo> clientList;
@@ -162,12 +163,17 @@ public class Client {
     
     private void processDirectoryServiceCommand(MSG msg){
         switch(msg.getMSGCode()){
-            case Constants.CODE_LOGOUT_OK: 
+            case Constants.CODE_LOGOUT_OK:
+                if(heartBeatThread != null)
+                    heartBeatThread.terminate();
                 if(chatThread != null)
                     chatThread.terminate();
                 System.out.println("You logged out"); 
                 break;
-            case Constants.CODE_LOGIN_OK:  
+            case Constants.CODE_LOGIN_OK:
+                heartBeatThread = new HeartbeatThreadSend(directoryServiceIp, 
+                        udpSocket.getLocalPort());
+                heartBeatThread.start();
                 if(chatThread == null){
                     chatThread.start();
                     

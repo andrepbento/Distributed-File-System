@@ -5,34 +5,53 @@ import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.List;
 
 public class HeartbeatThreadReceive extends Thread {
     private DatagramSocket socket;
     private DatagramPacket packet;
-    
-    // VER O QUE FAZER COM ISTO POSTERIORMENTE
-    //protected List<ServerInfo> serverHistory;
-    
-    protected List<ClientInfo> activeClients;
     
     public HeartbeatThreadReceive() throws SocketException{
         socket = new DatagramSocket(Constants.HB_LISTENING_PORT);
         packet = null;
     }
     
-    private void setServerLoggedOn(ServerInfo si) {
+    private void setServerHeartBeatStateOn(ServerInfo si) {
         for(ServerInfo s : DirectoryService.serversList)
             if(s.equals(si))
-                s.setLogged(true);
+                s.setHeartBeatState(true);
+    }
+    
+    private void setClientHeartBeatStateOn(ClientInfo ci) {
+        for(ClientInfo c : DirectoryService.clientsList)
+            if(c.equals(ci))
+                c.setHeartBeatState(true);
+    }
+    
+    private void printConnectedServers() {
+        System.out.println("\n--- Connected servers: ---");
+        int i = 1;
+        for(ServerInfo s : DirectoryService.serversList){
+            System.out.println(i+" - "+s.getName()+" - ["+s.isLogged()+"]");
+            i++;
+        }
+        System.out.println("--------------------------");
+    }
+    
+    private void printConnectedClients() {
+        System.out.println("\n--- Connected clients: ---");
+        int i = 1;
+        for(ClientInfo c : DirectoryService.clientsList){
+            System.out.println(i+" - "+c.getUsername()+" - ["+c.isLogged()+"]");
+            i++;
+        }
+        System.out.println("--------------------------");
     }
     
     @Override
     public void run() {
         if(socket == null)
-                return;
+            return;
         
         new CheckIfServerIsOn().start();
         new CheckIfClientIsOn().start();
@@ -48,16 +67,14 @@ public class HeartbeatThreadReceive extends Thread {
                 
                 if(receivedMSG.getCMDarg(0).equals(Constants.HEARTBEAT_SERVER)) {
                     System.out.println(Constants.HEARTBEAT_SERVER+" received!");
-                    setServerLoggedOn(new ServerInfo(packet.getAddress(), packet.getPort()));
+                    setServerHeartBeatStateOn(new ServerInfo(packet.getAddress(), packet.getPort()));
                 } else if(receivedMSG.getCMDarg(0).equals(Constants.HEARTBEAT_CLIENT)) {
                     System.out.println(Constants.HEARTBEAT_CLIENT+" received!");
-                    System.out.println("IMPLEMENTAR setClientLoggedOn(/*...*/)");
-                    //setClientLoggedOn(new ClientInfo(/*...*/));
+                    setClientHeartBeatStateOn(new ClientInfo(packet.getAddress(), 
+                            Integer.parseInt(receivedMSG.getCMDarg(1))));
                 } else
                     System.out.println("Hearth-Beat received NOT RECOGNIZED!");
-                
-                // VERIFICAR SE EXISTE NA LISTA O IP DE ONDE FOI RECEBIDO O HB POSTERIORMENTE (HISTÓRICO)
-                
+                    // PODE SER UMA LIGACAO CONHECIDA... PENSAR EM TENTAR RE-ESTABLECER LIGACAO
             } catch (ClassNotFoundException | IOException ex) {
                 ex.printStackTrace();
             }
@@ -67,36 +84,23 @@ public class HeartbeatThreadReceive extends Thread {
     class CheckIfServerIsOn extends Thread {
         @Override
         public void run() {
-            try {
-                while(true) {
-                    try {
-                        Thread.sleep(Constants.TIME + 1000);
-
-                        Iterator<ServerInfo> it = DirectoryService.serversList.iterator();
-                        while(it.hasNext()) {
-                            ServerInfo si = it.next();
-                            if(!si.isLogged()) {
-                                System.out.println("Server "+si.getName()+" removed!");
-                                it.remove();
-                            } else
-                                si.setLogged(false);
-                        }
-
-                        // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
-
-                        System.out.print("\nConnected servers:\n");
-                        int i = 1;
-                        for(ServerInfo s : DirectoryService.serversList){
-                            System.out.println(i+" - "+s.getName());
-                            i++;
-                        }
-                        System.out.println();
-                    } catch(ConcurrentModificationException e) {
-                        e.printStackTrace();
+            while(true) {
+                try {
+                    Thread.sleep(Constants.TIME + 500);
+                    
+                    Iterator<ServerInfo> it = DirectoryService.serversList.iterator();
+                    while(it.hasNext()) {
+                        ServerInfo si = it.next();
+                        if(!si.isHeartBeatState()) {
+                            si.setLogged(false);
+                            //it.remove();
+                        } else
+                            si.setHeartBeatState(false);
                     }
-                }
-            } catch(InterruptedException e) {
-                e.printStackTrace();
+                    printConnectedServers();
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                }    
             }
         }
     }
@@ -104,28 +108,24 @@ public class HeartbeatThreadReceive extends Thread {
     class CheckIfClientIsOn extends Thread {
         @Override
         public void run() {
-            try {
-                while(true) {
-                    Thread.sleep(Constants.TIME + 1000);
-                /*
-                for(ClientInfo c : activeClients)
-                    if(!c.isLogged())
-                        activeClients.remove(c);
-                */
-                    //else
-                        //c.setLog(false);
-                
-                // TENTAR VERIFICAR SE CONSEGUIMOS REESTABELECER LIGAÇÃO
-                
-                /*
-                System.out.print("Clientes ligados:  ");
-                for(ClientInfo c : activeClients)
-                        System.out.print(c.getUsername()+ "   ");
-                System.out.println("");
-                */
+            while(true) {
+                try {
+                    Thread.sleep(Constants.TIME + 500);
+
+                    Iterator<ClientInfo> it = DirectoryService.clientsList.iterator();
+                    while(it.hasNext()) {
+                        ClientInfo ci = it.next();
+                        if(!ci.isHeartBeatState()) {
+                            ci.logOut();
+                            //it.remove();
+                        } else
+                            ci.setHeartBeatState(false);
+                    }
+
+                    printConnectedClients();
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } catch(InterruptedException e) {
-                e.printStackTrace();
             }
         }
     }
