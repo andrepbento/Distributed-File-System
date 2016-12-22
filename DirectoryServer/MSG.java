@@ -48,6 +48,10 @@ public class MSG implements Serializable {
         return null;
     } 
     
+    public int getCmdSize(){
+        return cmd.size();
+    }
+    
     public void setCMD(List<String> cmd) {
         this.cmd = cmd;
     }

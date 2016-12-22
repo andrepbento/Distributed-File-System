@@ -2,10 +2,14 @@
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -36,10 +40,12 @@ public class ProcessClientRequest extends Thread {
     PrintWriter out;
     String directoryPath;
     private List<String> cmd;
+    MSG msg;
     
-    public ProcessClientRequest(ServerSocket serverSocket, Socket toClientSocket) throws SocketException{
+    public ProcessClientRequest(ServerSocket serverSocket, Socket toClientSocket, String directoryPath) throws SocketException{
         this.serverSocket = serverSocket;
         this.toClientSocket = toClientSocket;
+        this.directoryPath = directoryPath;
         cmd = new ArrayList<>();
     }
     @Override
@@ -53,7 +59,11 @@ public class ProcessClientRequest extends Thread {
         if(serverSocket == null){
             return;
         }
-        
+        /*
+        FALTA COLOCAR AQUI UMA PASTA COM O NOME DO UTILIZADOR
+        System.out.println("CRIEI UMA DIRECTORIA EM: " + directoryPath);
+        new File(directoryPath).mkdir();
+        */
         System.out.println("TCP conection started [PORT: " + serverSocket.getLocalPort()+"]");
         
         while (run) {
@@ -67,6 +77,18 @@ public class ProcessClientRequest extends Thread {
                 //if(requestClientInfo.getUsername())
 
                 request = (MSG) (in.readObject());
+                
+                System.out.println("CRIEI UMA DIRECTORIA EM: " + directoryPath);
+                directoryPath = directoryPath + File.separator + requestClientInfo.getUsername();
+                new File(directoryPath).mkdir();
+                
+                msg = new MSG();
+                cmd.clear();
+                cmd.add("CLIENTE PATH");
+                cmd.add(directoryPath);
+                msg.setCMD(cmd);
+                out.writeObject(msg);
+                out.flush();
 
                 if (request == null) {
                     toClientSocket.close();
@@ -80,7 +102,7 @@ public class ProcessClientRequest extends Thread {
 
                 //TRATA DOS CLIENTES POSTERIORMENTE
                 if (request.getCMD().size() < 2) {
-                    MSG msg = new MSG();
+                    msg = new MSG();
                     msg.setMSGCode(Constants.CODE_CMD_NOT_RECOGNIZED);
                     out.writeObject(msg);
                     out.flush();
@@ -90,6 +112,25 @@ public class ProcessClientRequest extends Thread {
                 switch (request.getCMDarg(0)) {
                     case "CD":
                         System.out.println("RECEBI UM CD COMO PRIMEIRO ARGUMENTO");
+                        
+                        File localDirectory;
+                        localDirectory = new File(request.getCMDarg(1));
+                        
+                        if(!localDirectory.exists()){
+                            System.out.println("A directoria para a qual te estas a mover  [" + localDirectory + "] nao existe!");
+                            return;
+                        }
+
+                        if(!localDirectory.isDirectory()){
+                            System.out.println("O caminho que indicaste [" + localDirectory + "] nao se refere a uma directoria!");
+                            return;
+                        }
+
+                        if(!localDirectory.canRead()){
+                            System.out.println("Sem permissoes de leitura na directoria " + localDirectory + "!");
+                            return;
+                        }
+                        processFileRequest();
                         break;
                     case "COPY":
                         System.out.println("RECEBI UM COPY COMO PRIMEIRO ARGUMENTO");
@@ -113,6 +154,78 @@ public class ProcessClientRequest extends Thread {
                 }catch(IOException e){}
             }
             
+        }
+    }
+    
+     public void processFileRequest()
+    {        
+        BufferedReader in;
+        OutputStream out;
+        Socket socketToClient;        
+        byte []fileChunck = new byte[1026];
+        int nbytes;
+        String requestedFileName, requestedCanonicalFilePath = null;
+        FileInputStream requestedFileInputStream = null;
+        
+        if(serverSocket == null){
+            return;
+        }
+
+        System.out.println("Servidor de carregamento de ficheiros iniciado...");
+        
+        try{
+            
+                
+                try{
+                    
+                    in = new BufferedReader(new InputStreamReader(toClientSocket.getInputStream()));
+                    out = toClientSocket.getOutputStream();
+                    
+                    requestedFileName = in.readLine();
+                     
+                    System.out.println("Recebido pedido para: " + requestedFileName);
+
+                    requestedCanonicalFilePath = new File(directoryPath+File.separator+requestedFileName).getCanonicalPath();
+
+                    if(!requestedCanonicalFilePath.startsWith(directoryPath+File.separator)){
+                        System.out.println("Nao e' permitido aceder ao ficheiro " + requestedCanonicalFilePath + "!");
+                        System.out.println("A directoria de base nao corresponde a " + directoryPath +"!");
+                        return;
+                    }
+                    
+                    requestedFileInputStream = new FileInputStream(requestedCanonicalFilePath);
+                    System.out.println("Ficheiro " + requestedCanonicalFilePath + " aberto para leitura.");
+                    
+                    while((nbytes = requestedFileInputStream.read(fileChunck))>0){                        
+                        
+                        out.write(fileChunck, 0, nbytes);
+                        out.flush();
+                                                
+                    }     
+                    
+                    System.out.println("Transferencia concluida");
+                    
+                }catch(FileNotFoundException e){   //Subclasse de IOException                 
+                    System.out.println("Ocorreu a excepcao {" + e + "} ao tentar abrir o ficheiro " + requestedCanonicalFilePath + "!");                   
+                }catch(IOException e){
+                    System.out.println("Ocorreu a excepcao de E/S: \n\t" + e);                       
+                }
+                
+                if(requestedFileInputStream != null){
+                    try {
+                        requestedFileInputStream.close();
+                    } catch (IOException ex) {}
+                }
+
+                try{
+                     toClientSocket.close();
+                 } catch (IOException e) {}
+                
+           
+        }finally{
+            try {
+                serverSocket.close();
+            } catch (IOException e) {}
         }
     }
     

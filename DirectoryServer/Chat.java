@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.Socket;
-import java.util.List;
+import java.net.SocketException;
+import java.util.Arrays;
 
 
 /**
@@ -17,21 +17,25 @@ public class Chat {
     
     private DatagramSocket socket;
     private DatagramPacket packet;
-    private List<ClientInfo> activeClients;
     
-    public Chat(List<ClientInfo> activeClients) {
-        this.socket = null;
+    public Chat() {
+        try {
+            this.socket = new DatagramSocket();
+        } catch (SocketException ex) {
+            ex.printStackTrace();
+        }
         this.packet = null;
-        this.activeClients = activeClients;
     }
     
-    private void prepareChatMSG(MSG msg) {
+    private void prepareChatMSG(String username, MSG msg) {
+        MSG msgToSend = new MSG();
+        msgToSend.setCMD(Arrays.asList(username, msg.getCMDarg(3)));
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
         try{
             ObjectOutputStream os = new ObjectOutputStream(new
                                     BufferedOutputStream(byteStream));
             os.flush();
-            os.writeObject((MSG)msg);
+            os.writeObject((MSG)msgToSend);
             os.flush();
 
             byte[] sendBuf = byteStream.toByteArray();
@@ -43,28 +47,40 @@ public class Chat {
         System.out.println("Reply MSG sended!");
     }
     
-    public void sendChatMSGToAll(MSG msg) {
-        prepareChatMSG(msg);
+    public boolean sendChatMSGToAll(String username, MSG msg) {
+        prepareChatMSG(username, msg);
         try {
-            for(ClientInfo ci : activeClients) {
-                packet.setAddress(ci.getClientAddress());
-                socket = new DatagramSocket();
-                socket.send(packet);
+            for(ClientInfo ci : DirectoryService.clientsList) {
+                if(/*!ci.getUsername().equals(username) &&*/ ci.isLogged()) {
+                    packet.setAddress(ci.getClientAddress());
+                    packet.setPort(Constants.REC_CHAT_PORT);
+                    socket.send(packet);
+                }
             }
         } catch(IOException e) {
-            e.printStackTrace();
+            return false;
         }
+        return true;
     }
     
-    /* FALTA IMPLEMENTAR ISTO (NÃO TIVE TEMPO)
-    public void sendChatMSGToDesignatedClients(MSG msg, String clients) {
-        clients.trim();
-        String[] clientsUsernames = clients.split(",");
-        for(ClientInfo ci : activeClients) {
-            if(ci.equals(new Client(clientsUsernames)){
-            
+    public boolean sendChatMSGToDesignatedClients(String username, MSG msg) {
+        prepareChatMSG(username, msg);
+        String[] clientsUsernames = msg.getCMDarg(2).split(",");
+        for(int i = 0; i < clientsUsernames.length; i++) {
+            for(ClientInfo ci : DirectoryService.clientsList) {
+                if(ci.isLogged() && ci.getUsername().equals(clientsUsernames[i])){
+                    packet.setAddress(ci.getClientAddress());
+                    packet.setPort(Constants.REC_CHAT_PORT);
+                    try {
+                        socket.send(packet);
+                    } catch (SocketException ex) {
+                        return false;
+                    } catch (IOException ex) {
+                        return false;
+                    }
+                }
             }
         }
+        return true;
     }
-    */
 }

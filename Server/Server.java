@@ -32,6 +32,7 @@ import java.util.List;
  */
 public class Server{
     private String name;
+    private String localDirectory;
     private static DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
     private InetAddress ip;
@@ -44,7 +45,7 @@ public class Server{
     private MSG msgReceived;
 
     
-    public Server(String name, InetAddress ip, int sendingPort) throws SocketException, IOException 
+    public Server(String name, InetAddress ip, int sendingPort, String localDirectory) throws SocketException, IOException 
     {
         this.name = name;
         this.ip = ip;
@@ -53,6 +54,12 @@ public class Server{
         socket = new DatagramSocket();
         listClientsSockets = new ArrayList<>();
         serverSocket = new ServerSocket(0);
+        this.localDirectory = localDirectory + "" + name;
+        
+        
+        System.out.println("CRIEI UMA DIRECTORIA EM: " + this.localDirectory);
+        new File(this.localDirectory).mkdirs();
+        
     }
 
     //Regista-se mas se já ouver um server com o mesmo nome não regista
@@ -139,7 +146,7 @@ public class Server{
             
             // LANCAR A THREAD PARA TRATAR DO CLIENTE X
             //PRIMEIRO CRIA A FUNÇÃO QUE VAI ATENDER ESSE CLIENTE
-            ProcessClientRequest newClient = new ProcessClientRequest(serverSocket, clientSocket);
+            ProcessClientRequest newClient = new ProcessClientRequest(serverSocket, clientSocket, localDirectory);
             
             //GUARDA A FUNÇÃO E O SOCKET PARA ESSE CLIENTE
             this.listClientsPRequest.add(newClient);
@@ -179,8 +186,8 @@ public class Server{
         Server server = null;
         String serverName;
         
-        if(args.length != 3){
-            System.out.println("Sintaxe: java Servidor Nome ip sendingPort");
+        if(args.length != 4){
+            System.out.println("Sintaxe: java Servidor Nome ip sendingPort LocalDirectory");
             return;
         }
         
@@ -191,8 +198,8 @@ public class Server{
             porto = Integer.parseInt(args[2]);
             
             //Registar o Servidor
-            server = new Server(serverName, ip, porto); 
-            System.out.println("Server "+serverName+" started...\n");
+            server = new Server(serverName, ip, porto, args[3]); 
+            
             server.sendRegister();
             if(!server.receiveRegisterAnswer())
                 server.stopServer();
