@@ -45,13 +45,26 @@ public class Exceptions{
         public ListFailure(){ super("List Failures"); }
     }
     
-    //Connect
+    //Chat
+    static class ChatFailure extends Exception{
+        public ChatFailure(){ super("Chat failure"); }
+    }
+    
+    
+    //CLIENT 
+    static class CurrenthPath extends Exception{
+        public CurrenthPath(){ super("Current Path not rigth"); }
+    }
+    
     static class ConnectFailure extends Exception{
         public ConnectFailure(){ super("Connect failure"); }
     }
     
-    //Chat
-    static class ChatFailure extends Exception{
-        public ChatFailure(){ super("Chat failure"); }
+    static class AlreadyConnected extends Exception{
+        public AlreadyConnected(){ super("Already connected to this server"); }
+    }
+    
+    static class ServerDoesntExist extends Exception{
+        public ServerDoesntExist(){ super("There is no server with this name"); }
     }
 }
