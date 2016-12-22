@@ -5,10 +5,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.Socket;
 import java.net.SocketException;
 import java.util.Arrays;
-import java.util.List;
 
 
 /**
@@ -21,19 +19,23 @@ public class Chat {
     private DatagramPacket packet;
     
     public Chat() {
-        this.socket = null;
+        try {
+            this.socket = new DatagramSocket();
+        } catch (SocketException ex) {
+            ex.printStackTrace();
+        }
         this.packet = null;
     }
     
     private void prepareChatMSG(String username, MSG msg) {
         MSG msgToSend = new MSG();
-        msgToSend.setCMD(Arrays.asList(username, msg.getCMDarg(2)));
+        msgToSend.setCMD(Arrays.asList(username, msg.getCMDarg(3)));
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
         try{
             ObjectOutputStream os = new ObjectOutputStream(new
                                     BufferedOutputStream(byteStream));
             os.flush();
-            os.writeObject((MSG)msg);
+            os.writeObject((MSG)msgToSend);
             os.flush();
 
             byte[] sendBuf = byteStream.toByteArray();
@@ -49,10 +51,9 @@ public class Chat {
         prepareChatMSG(username, msg);
         try {
             for(ClientInfo ci : DirectoryService.clientsList) {
-                if(!ci.equals(new ClientInfo(username)) && ci.isLogged()) {
+                if(/*!ci.getUsername().equals(username) &&*/ ci.isLogged()) {
                     packet.setAddress(ci.getClientAddress());
                     packet.setPort(Constants.REC_CHAT_PORT);
-                    socket = new DatagramSocket();
                     socket.send(packet);
                 }
             }
@@ -64,14 +65,13 @@ public class Chat {
     
     public boolean sendChatMSGToDesignatedClients(String username, MSG msg) {
         prepareChatMSG(username, msg);
-        String[] clientsUsernames = msg.getCMDarg(0).split(",");
+        String[] clientsUsernames = msg.getCMDarg(2).split(",");
         for(int i = 0; i < clientsUsernames.length; i++) {
             for(ClientInfo ci : DirectoryService.clientsList) {
-                if(ci.isLogged() && ci.equals(new ClientInfo(clientsUsernames[i]))){
+                if(ci.isLogged() && ci.getUsername().equals(clientsUsernames[i])){
                     packet.setAddress(ci.getClientAddress());
                     packet.setPort(Constants.REC_CHAT_PORT);
                     try {
-                        socket = new DatagramSocket();
                         socket.send(packet);
                     } catch (SocketException ex) {
                         return false;

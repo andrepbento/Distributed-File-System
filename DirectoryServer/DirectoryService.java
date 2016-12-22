@@ -262,7 +262,8 @@ public class DirectoryService extends Thread {
                     System.out.println("\tLogin FAIL");
                     sendResponse(new MSG(Constants.CODE_LOGIN_FAILURE));
                 }else{
-                    if(logInClient(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3), receivedMSG.getCMDarg(4), packet.getAddress())) {
+                    if(logInClient(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3),
+                            packet.getAddress())) {
                         System.out.println("\tLogin Client OK\t"+receivedMSG.getCMDarg(2)+","+receivedMSG.getCMDarg(3));
                         sendResponse(new MSG(Constants.CODE_LOGIN_OK));
                     }else{
@@ -319,22 +320,17 @@ public class DirectoryService extends Thread {
                     System.out.println("\tChat FAIL\tCMD WRONG");
                     sendResponse(new MSG(Constants.CODE_CMD_FAILURE));
                 } else {
-                    MSG chatMSG = new MSG();
-                    List<String> msgContent = new ArrayList<>();
-                    msgContent.add(receivedMSG.getCMDarg(1));
-                    msgContent.add(receivedMSG.getCMDarg(2));
-                    chatMSG.setCMD(msgContent);
                     if(receivedMSG.getCMDarg(2).equals("-all")){
                         if(clientsChat.sendChatMSGToAll(
                                 getClient(packet.getAddress()).getUsername(),
-                                chatMSG))
+                                receivedMSG))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else
                             sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
                     } else {
                         if(clientsChat.sendChatMSGToDesignatedClients(
                                 getClient(packet.getAddress()).getUsername(), 
-                                chatMSG))
+                                receivedMSG))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else
                             sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
