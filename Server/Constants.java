@@ -32,6 +32,10 @@ public final class Constants {
     //HeartbeatThreadReceive
     public static final int LISTENING_PORT = 9801;
     
+     // [500-599] CONNECT
+    public static final int CODE_CONNECT_FAILURE = 501;
+    public static final int CODE_CONNECT_OK = 502;
+    
     //Server
     public static final int MAX_SIZE = 256;
     public static final int CODE_SERVER_REGISTER_FAILURE = 1000;

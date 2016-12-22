@@ -53,9 +53,9 @@ public class Server{
         packet = null;
         socket = new DatagramSocket();
         listClientsSockets = new ArrayList<>();
+        listClientsPRequest = new ArrayList<>();
         serverSocket = new ServerSocket(0);
         this.localDirectory = localDirectory + "" + name;
-        
         
         System.out.println("CRIEI UMA DIRECTORIA EM: " + this.localDirectory);
         new File(this.localDirectory).mkdirs();
@@ -141,6 +141,9 @@ public class Server{
                         +serverSocket.getLocalPort());
 
                 Socket clientSocket = serverSocket.accept();
+                
+                if(clientSocket == null)
+                    continue;
 
                 listClientsSockets.add(clientSocket);
 
