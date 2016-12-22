@@ -17,7 +17,6 @@ public final class Constants {
     public static final String CMD_LOGIN = "LOGIN";
     public static final String CMD_LOGOUT = "LOGOUT";
     public static final String CMD_LIST = "LIST";
-    public static final String CMD_CONNECT = "CONNECT";
     public static final String CMD_CHAT = "CHAT";
     
     //Server CMD List

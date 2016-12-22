@@ -24,7 +24,6 @@ public class DirectoryService extends Thread {
     private DatagramSocket socket;
     private DatagramPacket packet;
     protected static List<ServerInfo> serversList;
-    private boolean hbThreadIsRunning = false;
     protected static List<ClientInfo> clientsList;
     
     private Chat clientsChat;
@@ -35,6 +34,7 @@ public class DirectoryService extends Thread {
         socket = new DatagramSocket(Constants.LISTENIGN_PORT);
         serversList = new ArrayList<>();
         clientsList = loadClientsList();
+        logOutAllClients();
         clientsChat = new Chat();
         try {
             System.out.println("DirectoryService started...\n"
@@ -43,6 +43,8 @@ public class DirectoryService extends Thread {
         } catch (UnknownHostException ex) {
             ex.printStackTrace();
         }
+        
+        new HeartbeatThreadReceive().start();
         
         printClientsList();
         printServersList();
@@ -140,10 +142,6 @@ public class DirectoryService extends Thread {
                 System.out.println("Server connected: "+name+"\t"
                         +ip+":"+port);
                 serverResponse.setMSGCode(Constants.CODE_SERVER_REGISTER_OK);
-                if(!hbThreadIsRunning){
-                    new HeartbeatThreadReceive().start();
-                    hbThreadIsRunning = true;
-                }
             }
             sendResponse(serverResponse);
         }catch(Exception e){
@@ -241,7 +239,7 @@ public class DirectoryService extends Thread {
                     sendResponse(new MSG(Constants.CODE_REGISTER_FAILURE));
                 }else{
                     if(!clientExists(receivedMSG.getCMDarg(2))) {
-                        clientsList.add(new ClientInfo(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3), null));
+                        clientsList.add(new ClientInfo(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3), null, -1));
                         saveClientsList();
                         System.out.println("\tRegister Client OK\t"+receivedMSG.getCMDarg(2)+","+receivedMSG.getCMDarg(3)+"\n");
                         sendResponse(new MSG(Constants.CODE_REGISTER_OK));
@@ -263,7 +261,7 @@ public class DirectoryService extends Thread {
                     sendResponse(new MSG(Constants.CODE_LOGIN_FAILURE));
                 }else{
                     if(logInClient(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3),
-                            packet.getAddress())) {
+                            packet.getAddress(), packet.getPort())) {
                         System.out.println("\tLogin Client OK\t"+receivedMSG.getCMDarg(2)+","+receivedMSG.getCMDarg(3));
                         sendResponse(new MSG(Constants.CODE_LOGIN_OK));
                     }else{
@@ -274,19 +272,19 @@ public class DirectoryService extends Thread {
                 break;
             case Constants.CMD_LOGOUT:
                 System.out.println("Received " + Constants.CMD_LOGOUT);
-                if(!clientIsLogged(packet.getAddress())){
+                if(!clientIsLogged(packet.getAddress(), packet.getPort())){
                     System.out.println("\tLogout FAIL\tNOT LOGGED IN");
                     sendResponse(new MSG(Constants.CODE_LOGIN_NOT_LOGGED_IN));
                     break;
                 } else {
                     System.out.println("\tLogout OK\tClient: "
-                            +getClient(packet.getAddress()).getUsername());
-                    logOutClient(packet.getAddress());
+                            +getClient(packet.getAddress(), packet.getPort()).getUsername());
+                    logOutClient(packet.getAddress(), packet.getPort());
                     sendResponse(new MSG(Constants.CODE_LOGOUT_OK));
                 }
                 break;
             case Constants.CMD_LIST: 
-                if(!clientIsLogged(packet.getAddress())){
+                if(!clientIsLogged(packet.getAddress(), packet.getPort())){
                     System.out.println("\tList FAIL\tNOT LOGGED IN");
                     sendResponse(new MSG(Constants.CODE_LOGIN_NOT_LOGGED_IN));
                     break;
@@ -311,7 +309,7 @@ public class DirectoryService extends Thread {
                 }
                 break;
             case Constants.CMD_CHAT:
-                if(!clientIsLogged(packet.getAddress())){
+                if(!clientIsLogged(packet.getAddress(), packet.getPort())){
                     System.out.println("\tChat FAIL\tNOT LOGGED IN");
                     sendResponse(new MSG(Constants.CODE_LOGIN_NOT_LOGGED_IN));
                     break;
@@ -322,14 +320,14 @@ public class DirectoryService extends Thread {
                 } else {
                     if(receivedMSG.getCMDarg(2).equals("-all")){
                         if(clientsChat.sendChatMSGToAll(
-                                getClient(packet.getAddress()).getUsername(),
+                                getClient(packet.getAddress(), packet.getPort()).getUsername(),
                                 receivedMSG))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else
                             sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
                     } else {
                         if(clientsChat.sendChatMSGToDesignatedClients(
-                                getClient(packet.getAddress()).getUsername(), 
+                                getClient(packet.getAddress(), packet.getPort()).getUsername(), 
                                 receivedMSG))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else
@@ -366,11 +364,10 @@ public class DirectoryService extends Thread {
         return null;
     }
     
-    private ClientInfo getClient(InetAddress clientAddress){
+    private ClientInfo getClient(InetAddress clientAddress, int clientPort){
         for(ClientInfo c : clientsList)
-            if(c.getClientAddress() != null)
-                if(c.getClientAddress().equals(clientAddress))
-                    return c;
+            if(c.equals(new ClientInfo(clientAddress, clientPort)))
+                return c;
         return null;
     }
     
@@ -389,8 +386,8 @@ public class DirectoryService extends Thread {
         return false;
     }
     
-    private boolean clientIsLogged(InetAddress clientAddress){
-        ClientInfo c = getClient(clientAddress);
+    private boolean clientIsLogged(InetAddress clientAddress, int clientPort){
+        ClientInfo c = getClient(clientAddress, clientPort);
         if(c != null)
             if(c.isLogged())
                 return true;
@@ -406,24 +403,22 @@ public class DirectoryService extends Thread {
     }
     
     private boolean logInClient(String username, String password, 
-            InetAddress clientAddress){
+            InetAddress clientAddress, int clientPort){
         ClientInfo c = getClient(username);
-        if(c != null){
-            if(c.getPassword().equals(password)){
-                c.setLogged(true);
-                c.setClientAddress(clientAddress);
-                return true;
-            }
-        }
+        if(c != null)
+            return c.logIn(password, clientAddress, clientPort);
         return false;
     }
     
-    private void logOutClient(InetAddress clientAddress){
-        ClientInfo c = getClient(clientAddress);
-        if(c != null){
-            c.setLogged(false);
-            c.setClientAddress(null);
-        }
+    private void logOutClient(InetAddress clientAddress, int clientPort){
+        ClientInfo c = getClient(clientAddress, clientPort);
+        if(c != null)
+            c.logOut();
+    }
+    
+    private void logOutAllClients() {
+        for(ClientInfo ci : clientsList)
+            ci.logOut();
     }
     
     public static final List<ClientInfo> loadClientsList() {
@@ -444,7 +439,7 @@ public class DirectoryService extends Thread {
         return clientList;
     }
     
-    public final void saveClientsList(){
+    public final boolean saveClientsList(){
         FileOutputStream fout = null;
         try {
             fout = new FileOutputStream(Constants.CLIENT_LIST_PATH);
@@ -453,15 +448,31 @@ public class DirectoryService extends Thread {
             oos = new ObjectOutputStream(fout);
             oos.writeObject(clientsList);
         } catch(FileNotFoundException e) {
-            e.printStackTrace();
+            return false;
         } catch(IOException e) {
-            e.printStackTrace();
+            return false;
         }
+        return true;
     }
+    
+    /*
+    private void detectServerExit() {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+              public void run() {
+                    logOutAllClients();
+                    if(saveClientsList())
+                        System.out.println("Clients list saved!");
+                    else
+                        System.out.println("Clients list NOT saved!");
+                  }
+              });
+    }
+    */
     
     public static void main(String[] args) {
         try {
             DirectoryService sd = new DirectoryService();
+            //sd.detectServerExit();
             sd.processRequests();
         } catch(SocketException e) {
             e.printStackTrace();
