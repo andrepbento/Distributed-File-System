@@ -135,25 +135,26 @@ public class Server{
         
         try{
             
-            
-            System.out.println("Waiting client connections: "
-                    +InetAddress.getLocalHost().getHostAddress()+":"
-                    +serverSocket.getLocalPort());
+            while(true){
+                System.out.println("Waiting client connections: "
+                        +InetAddress.getLocalHost().getHostAddress()+":"
+                        +serverSocket.getLocalPort());
 
-            Socket clientSocket = serverSocket.accept();
-            
-            listClientsSockets.add(clientSocket);
-            
-            // LANCAR A THREAD PARA TRATAR DO CLIENTE X
-            //PRIMEIRO CRIA A FUNÇÃO QUE VAI ATENDER ESSE CLIENTE
-            ProcessClientRequest newClient = new ProcessClientRequest(serverSocket, clientSocket, localDirectory);
-            
-            //GUARDA A FUNÇÃO E O SOCKET PARA ESSE CLIENTE
-            this.listClientsPRequest.add(newClient);
-            this.listClientsSockets.add(clientSocket);
-            
-            //INICIA A THREAD
-            newClient.start();
+                Socket clientSocket = serverSocket.accept();
+
+                listClientsSockets.add(clientSocket);
+
+                // LANCAR A THREAD PARA TRATAR DO CLIENTE X
+                //PRIMEIRO CRIA A FUNÇÃO QUE VAI ATENDER ESSE CLIENTE
+                ProcessClientRequest newClient = new ProcessClientRequest(serverSocket, clientSocket, localDirectory);
+
+                //GUARDA A FUNÇÃO E O SOCKET PARA ESSE CLIENTE
+                this.listClientsPRequest.add(newClient);
+                this.listClientsSockets.add(clientSocket);
+
+                //INICIA A THREAD
+                newClient.start();
+            }
         
         }catch(IOException e){
             e.printStackTrace();
@@ -180,6 +181,14 @@ public class Server{
         System.exit(0);
     }
     
+    public static void serverShutdown(){
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+              public void run() {
+                    System.out.println(" END ");
+              }
+        });
+    }
+    
     public static void main(String[] args) {
         InetAddress ip;
         int porto;
@@ -198,7 +207,8 @@ public class Server{
             porto = Integer.parseInt(args[2]);
             
             //Registar o Servidor
-            server = new Server(serverName, ip, porto, args[3]); 
+            server = new Server(serverName, ip, porto, args[3]);
+            serverShutdown();
             
             server.sendRegister();
             if(!server.receiveRegisterAnswer())
@@ -209,6 +219,7 @@ public class Server{
             server.heartBeat.start();
             
             //INICIALIZA COMUNICAÇÃO TCP
+            
             server.processClientConnections();
             
         }catch(NumberFormatException e){
