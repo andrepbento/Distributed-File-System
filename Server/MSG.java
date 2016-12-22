@@ -6,7 +6,8 @@ import java.util.List;
 /**
  *
  * @author jorge
- */public class MSG implements Serializable {
+ */
+public class MSG implements Serializable {
     static final long serialVersionUID = 1010L;
     private int msgCode;
     private List<String> cmd;
