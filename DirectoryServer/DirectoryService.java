@@ -23,9 +23,11 @@ import java.util.List;
 public class DirectoryService extends Thread {
     private DatagramSocket socket;
     private DatagramPacket packet;
-    private List<ServerInfo> serversList;
+    protected static List<ServerInfo> serversList;
     private boolean hbThreadIsRunning = false;
-    private List<ClientInfo> clientsList;
+    protected static List<ClientInfo> clientsList;
+    
+    private Chat clientsChat;
     
     public DirectoryService() throws SocketException{
         socket = null;
@@ -33,6 +35,7 @@ public class DirectoryService extends Thread {
         socket = new DatagramSocket(Constants.LISTENIGN_PORT);
         serversList = new ArrayList<>();
         clientsList = loadClientsList();
+        clientsChat = new Chat();
         try {
             System.out.println("DirectoryService started...\n"
                     +"IP:"+InetAddress.getLocalHost().getHostAddress()
@@ -97,7 +100,7 @@ public class DirectoryService extends Thread {
             }
         } catch(IOException | NumberFormatException e){
             e.printStackTrace();
-        } finally{
+        } finally {
             closeSocket();
         }
     }
@@ -128,16 +131,17 @@ public class DirectoryService extends Thread {
             String name = receivedMSG.getCMDarg(1);
             InetAddress ip = packet.getAddress();
             int port = packet.getPort();
+            int serverSocketPort = Integer.parseInt(receivedMSG.getCMDarg(2));
             
             MSG serverResponse = new MSG(Constants.CODE_SERVER_REGISTER_FAILURE);
 
             if(!serverExists(name)){
-                serversList.add(new ServerInfo(name, ip, port));
+                serversList.add(new ServerInfo(name, ip, port, serverSocketPort));
                 System.out.println("Server connected: "+name+"\t"
                         +ip+":"+port);
                 serverResponse.setMSGCode(Constants.CODE_SERVER_REGISTER_OK);
                 if(!hbThreadIsRunning){
-                    new HeartbeatThreadReceive(serversList).start();
+                    new HeartbeatThreadReceive().start();
                     hbThreadIsRunning = true;
                 }
             }
@@ -153,7 +157,7 @@ public class DirectoryService extends Thread {
         int i = 1;
         for(ServerInfo s : serversList){
             System.out.println(i+"-["+s.getName()+"]:["+s.isLogged()+"]:["
-                    +s.getIp()+"]:["+s.getPort()+"]");
+                    +s.getIp()+"]:["+s.getDatagramSocketPort()+"]");
             i++;
         }
         System.out.println("----------------------------------");
@@ -258,7 +262,8 @@ public class DirectoryService extends Thread {
                     System.out.println("\tLogin FAIL");
                     sendResponse(new MSG(Constants.CODE_LOGIN_FAILURE));
                 }else{
-                    if(logInClient(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3), packet.getAddress())) {
+                    if(logInClient(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3),
+                            packet.getAddress())) {
                         System.out.println("\tLogin Client OK\t"+receivedMSG.getCMDarg(2)+","+receivedMSG.getCMDarg(3));
                         sendResponse(new MSG(Constants.CODE_LOGIN_OK));
                     }else{
@@ -305,24 +310,6 @@ public class DirectoryService extends Thread {
                         sendResponse(new MSG(Constants.CODE_LIST_FAILURE));
                 }
                 break;
-                /*
-            case Constants.CMD_CONNECT:
-                if(!clientIsLogged(packet.getAddress())){
-                    System.out.println("\tConnect FAIL\tNOT LOGGED IN");
-                    sendResponse(new MSG(Constants.CODE_LOGIN_NOT_LOGGED_IN));
-                    break;
-                }
-                if(receivedMSG.getCMD().size() < 2){
-                    System.out.println("\tList FAIL\tCMD WRONG");
-                    sendResponse(new MSG(Constants.CODE_CONNECT_FAILURE));
-                } else {
-                    /* SEND LIST OF SERVERS
-                    if(tryToConnectClientServer(getServer(receivedMSG.getCMDarg(2))))
-                        // MANDRA IP PORTO
-                    sendClientResponse(Constants.CODE_CONNECT_OK, );
-                }
-                break;
-                */
             case Constants.CMD_CHAT:
                 if(!clientIsLogged(packet.getAddress())){
                     System.out.println("\tChat FAIL\tNOT LOGGED IN");
@@ -331,10 +318,22 @@ public class DirectoryService extends Thread {
                 }
                 if(receivedMSG.getCMD().size() < 3){
                     System.out.println("\tChat FAIL\tCMD WRONG");
-                    sendResponse(new MSG(Constants.CODE_CONNECT_FAILURE));
+                    sendResponse(new MSG(Constants.CODE_CMD_FAILURE));
                 } else {
-                    if(receivedMSG.getCMDarg(1).equals("-all")){
-                        
+                    if(receivedMSG.getCMDarg(2).equals("-all")){
+                        if(clientsChat.sendChatMSGToAll(
+                                getClient(packet.getAddress()).getUsername(),
+                                receivedMSG))
+                            sendResponse(new MSG(Constants.CODE_CHAT_OK));
+                        else
+                            sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
+                    } else {
+                        if(clientsChat.sendChatMSGToDesignatedClients(
+                                getClient(packet.getAddress()).getUsername(), 
+                                receivedMSG))
+                            sendResponse(new MSG(Constants.CODE_CHAT_OK));
+                        else
+                            sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
                     }
                 }
                 break;
@@ -359,7 +358,7 @@ public class DirectoryService extends Thread {
     public synchronized List<ClientInfo> getClientsList() {
         return clientsList;
     }
-
+    
     private ClientInfo getClient(String username){
         for(ClientInfo c : clientsList)
             if(c.getUsername().equals(username))
