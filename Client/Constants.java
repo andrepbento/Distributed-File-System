@@ -15,6 +15,7 @@ public final class Constants {
     public static final String CMD_LIST = "LIST";
     
     public static final String CMD_CONNECT = "CONNECT";
+     public static final String CMD_DISCONNECT = "DISCONNECT";
     public static final String DS = "DS";
     
         //Directory Service Codes
