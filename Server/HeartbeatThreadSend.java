@@ -1,71 +1,61 @@
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Arrays;
 
 /**
  *
  * @author Jorge
  */
-public class HeartbeatThreadSend extends Thread{
-    
-    
+public class HeartbeatThreadSend extends Thread {
+    private InetAddress ip;
     private DatagramSocket socketSend;
     private DatagramPacket packetSend;
-    InetAddress ip;
+    private boolean running;
 
-    public HeartbeatThreadSend(InetAddress ip, DatagramSocket socketThread) throws SocketException{
-        socketSend = socketThread;
+    public HeartbeatThreadSend(InetAddress ip, DatagramSocket socketSend) {
         this.ip = ip;
-        //packetSend = new DatagramPacket(Constants.HEARTBEAT_SERVER.getBytes(),Constants.HEARTBEAT_SERVER.length(),ip, Constants.SENDING_PORT);
+        this.socketSend = socketSend;
+        MSG heartBeatMSG = new MSG();
+        heartBeatMSG.setCMD(Arrays.asList(Constants.HEARTBEAT_SERVER));
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(Constants.MAX_SIZE);
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(heartBeatMSG);
+            oos.flush();
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        byte[] sendBuf = baos.toByteArray();
+        packetSend = new DatagramPacket(sendBuf, sendBuf.length, ip, Constants.SENDING_PORT_HB);
+        running = true;
+    }
+    
+    public void terminate() {
+        running = false;
     }
     
     @Override
     public void run() {
+        if(socketSend == null) 
+            return;
         
-         ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
-        
-        try{
-            ObjectOutputStream os = new ObjectOutputStream(new
-                                    BufferedOutputStream(byteStream));
-            os.flush();
-            
-            MSG mesageSend = new MSG();
-            List<String> listSend = new ArrayList<>();
-            
-            //ADICIONAR OS COMANDS A LIST
-            listSend.add(Constants.HEARTBEAT_SERVER);
-            
-            //ADICIONAR A LIST A MSG
-            mesageSend.setCMD(listSend);
-            
-            //ENVIAR
-            while(true){
-                os.writeObject((MSG)mesageSend);
-                os.flush();
-
-            byte[] sendBuf = byteStream.toByteArray();
-            
-            packetSend = new DatagramPacket(sendBuf, sendBuf.length, ip, Constants.SENDING_PORT);
-            socketSend.send(packetSend);
-            sleep(32000);
+        try {
+            while(running) {
+                socketSend.send(packetSend);
+                Thread.sleep(Constants.TIME);
             }
-        } catch(IOException ex) {
+        } catch (IOException | InterruptedException ex) {
             ex.printStackTrace();
-        } catch (InterruptedException ex) {
-            Logger.getLogger(HeartbeatThreadSend.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            terminate();
+            if(socketSend != null)
+                socketSend.close();
         }
-        
     }
     /*
     public boolean receiveHeartBeatAnswer(){
@@ -99,5 +89,5 @@ public class HeartbeatThreadSend extends Thread{
         }
         return false;
     }
-*/ 
+    */ 
 }

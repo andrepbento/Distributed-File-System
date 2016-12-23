@@ -6,7 +6,7 @@ public final class Constants {
     public static final long TIME = 30000;
     public static final long TIME_OUT = 30000;
     public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
-    public static final int SENDING_PORT = 9801;
+    public static final int SENDING_PORT_HB = 9801;
     
     //Names
     public static final String SERVER = "SERVER";

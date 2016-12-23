@@ -1,5 +1,4 @@
 
-import com.sun.corba.se.impl.orbutil.closure.Constant;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -19,12 +18,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 /**
  *
@@ -49,6 +42,7 @@ public class ProcessClientRequest extends Thread {
         this.directoryPath = directoryPath;
         cmd = new ArrayList<>();
     }
+    
     @Override
     public void run() {
         boolean run = true;
@@ -69,7 +63,6 @@ public class ProcessClientRequest extends Thread {
         
         
         while (run) {
-
             try {
                 outObj = new ObjectOutputStream(toClientSocket.getOutputStream());
                 inObj = new ObjectInputStream(toClientSocket.getInputStream());
@@ -83,7 +76,7 @@ public class ProcessClientRequest extends Thread {
                     continue;
                 }
 
-                System.out.println("Recebido \"" + request.toStringCMD()
+                System.out.println("Recebido \"" + request.getCMD().toString()
                         + "\" de " + toClientSocket.getInetAddress().getHostAddress()
                         + ":" + toClientSocket.getLocalPort()); //trim apaga os espaços brancos
 
@@ -93,7 +86,7 @@ public class ProcessClientRequest extends Thread {
                     return;
                 }
                 
-                switch (request.getCMDarg(0)) {
+                switch (request.getCMDarg(0).toLowerCase()) {
                     case "DOWNLOAD":    //ESTE PRIMEIRO PODE SER MUDADO
                         System.out.println("RECEBI UM DOWNLOAD COMO PRIMEIRO ARGUMENTO");
                         
@@ -125,17 +118,12 @@ public class ProcessClientRequest extends Thread {
                     default:
                         System.out.println("CALMA QUE EU CHEGUEI AO DEFAULT E NÃO DEVO TER ENCONTRADO NADA");
                 }
-                
-            }catch(IOException e){
-                System.out.println("Erro na comunicacao como o cliente " + 
-                                toClientSocket.getInetAddress().getHostAddress() + ":" + 
-                                    toClientSocket.getPort()+"\n\t" + e);
             }catch (ClassNotFoundException ex) {
-                Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex);
+                ex.printStackTrace();
             }
-            
         }
     }
+    
     private boolean initiate() {
        try{
             outObj = new ObjectOutputStream(toClientSocket.getOutputStream());
@@ -168,7 +156,7 @@ public class ProcessClientRequest extends Thread {
        return true;
     }
     
-     public boolean directoryExists(File localDirectory){
+    public boolean directoryExists(File localDirectory){
         if(!localDirectory.exists()){
             System.out.println("A directoria para a qual te estas a mover  [" + localDirectory + "] nao existe!");
             return false;
@@ -184,9 +172,9 @@ public class ProcessClientRequest extends Thread {
             return false;
         }
         return true;
-     }
+    }
      
-     public boolean processFileRequest()
+    public boolean processFileRequest()
     {        
         OutputStream out;    
         byte []fileChunck = new byte[1026];
@@ -262,7 +250,8 @@ public class ProcessClientRequest extends Thread {
         return sendMSG(new MSG(0,Arrays.asList(canonicalPath)));erro
             
     }
-      public boolean processMKDIRequest(String canonicalPath)
+      
+    public boolean processMKDIRequest(String canonicalPath)
     {        
         ObjectInputStream in;
         ObjectOutputStream out;
@@ -286,17 +275,18 @@ public class ProcessClientRequest extends Thread {
         //Constroi a resposta terminando-a com uma mudanca de lina
         return sendMSG(new MSG(0,Arrays.asList("A directoria [" + canonicalPath + "] criada.")));erro
     }
-      
-    public boolean sendMSG(MSG msg) throws IOException{
-          try{
-          outObj.writeObject(msg);
-          outObj.flush();
-          }catch(IOException e){
+    
+    public boolean sendMSG(MSG msg)
+    {
+        try{
+            outObj.writeObject(msg);
+            outObj.flush();
+        }catch(IOException e){
             System.out.println("Erro na comunicação como o cliente " + 
                 toClientSocket.getInetAddress().getHostAddress() + ":" + 
                 toClientSocket.getPort()+"\n\t" + e);
             return false;
-          }
+        }
         return true;
-      }
+    }
 }
