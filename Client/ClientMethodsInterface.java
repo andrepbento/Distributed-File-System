@@ -4,8 +4,9 @@
  * @author andre
  * METHOD -> CMD
  * register() -> register username password
- * login() -> login 
+ * login() -> login usename password 
  * logout() -> logout
+ * list() -> list -s || list -c                             [SERVERS || CLIENTS]
  * copyFile() -> cp fileXPTO /cliente1/pasta2/pasta21                   [COPIAR]
  * moveFile() -> mv fileXPTO /cliente1/pasta2/pasta21                   [CORTAR]
  * changeWorkingDirectory() -> cd ..   || cd pasta2                 [BACK || TO]
@@ -13,17 +14,24 @@
  * getFileContent() -> cat fileXPTO
  * removeFile() -> rm fileXPTO  || rm directoryXPTO (ONLY IF EMPTY)
  * makeDir() -> mkdir directoryXPTO
+ * download() -> fileXPTO
+ * upload() -> fileXPTO
  * 
  */
 public interface ClientMethodsInterface {
-    public boolean register(String username, String password);
-    public boolean login(String username, String password); 
-    public boolean logout();
-    public boolean copyFile(String filename, String destinationPath);
-    public boolean moveFile(String filename, String destinationPath);
-    public boolean changeWorkingDirectory(String newWorkingDirectoryPath);
-    public boolean getWorkingDirContent();
-    public boolean getFileContent(String filename);
-    public boolean removeFile(String name);
-    public boolean makeDir(String directoryName);
+    public void register(String username, String password);
+    public void login(String username, String password); 
+    public void logout();
+    public void connect(String serverName);
+    public void disconnect();
+    public void list(String type);
+    public void copyFile(String filename, String destinationPath);
+    public void moveFile(String filename, String destinationPath);
+    public void changeWorkingDirectory(String newWorkingDirectoryPath);
+    public void getWorkingDirContent();
+    public void getFileContent(String fileName);
+    public void removeFile(String name);
+    public void makeDir(String directoryName);
+    public void downloadFile(String fileName);
+    public void uploadFile(String fileName);
 }
