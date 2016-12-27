@@ -18,88 +18,128 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     public static final int FS_SERVER = 1;
     public static final int FS_LOCAL = 2;
     
-    
     private int fileSystem; // 0(DS), 1(Server), 2(local) ??????????????????????? TALVEZ SEJA MELHOR ASSIM TRUE|FALSE NAO CHEGA
-    private String localDirectory, remoteDirectory;
+    private String localDirectory;
+    private Client client;
     
-    public DistributedFileSystem(String localDirectory) {
-        fileSystem = 0;
-        this.localDirectory = localDirectory;
+    public DistributedFileSystem(Client client) {
+        fileSystem = FS_DIRECTORY_SERVICE;
+        this.client = client;
+        try {
+            localDirectory = new File(".").getCanonicalPath();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public String getCurrentPath() {
+        switch (fileSystem) {
+            case FS_DIRECTORY_SERVICE:
+                return Constants.DS;
+            case FS_SERVER:
+                return //client.getCurrentConnection().getServerName() +
+                        client.getCurrentConnection().getCurrentPath();
+            case FS_LOCAL:
+                return localDirectory;
+        }
+        return null;
     }
     
     // CHAMAR ESTA FUNCAO SEMPRE QUE O CMD TENHA lenght=1 [Comando interno]
     public void switchSystemType(String to) {
-        to.trim();
-        if(to.toLowerCase().equals("DS")){ //MUDAR PARA DS
+        if(to.equals(Constants.DS)){ //MUDAR PARA DS
             fileSystem = FS_DIRECTORY_SERVICE;
-        }else if(to.toLowerCase().equals("LOCAL")){ //MUDAR PARA LOCAL
-            if(/*VER SE ESTA LIGADO A ALGUM SERVIDOR, SE SIM MUDAR*/){
+        }else if(to.equals(Constants.LOCAL)){ //MUDAR PARA LOCAL
+            if(client.getCurrentConnection() != null){
                 fileSystem = FS_LOCAL;
-                //MARCAR O SERVIDOR QUE ESTA LIGADO
             }
+            else
+                throw new Exceptions.SwitchingLocalNotPossible();
         }else{ //MUDAR PARA "SERVER_X"
-            if(/*VER SE ESTA LIGADO A ALGUM SERVIDOR E SE O "to" E IGUAL A ALGUM*/){
-                fileSystem = FS_SERVER;
-                // PEDIR AO Servidor em questão o caminho ??????????????????????
-                remoteDirectory = getServer(to).getWorkingDirectory();
-            }else{
-                //SERVER NOT CONNECTED!
-            }
+            if(client.getServerConnection(to) != null){
+                if(client.checkIfImConnected(to)){
+                    fileSystem = FS_SERVER;
+                    client.setCurrentConnection(client.getServerConnection(to));
+                }else
+                    throw new Exceptions.NotConnectedToServer();
+            }else
+                throw new Exceptions.ServerDoesntExist();
         }
     }
     
     @Override
     public void register(String username, String password) {
-        if(fileSystem==FS_DIRECTORY_SERVICE){
+        if(fileSystem == FS_DIRECTORY_SERVICE){
             sendRequestUdp(REGISTER+" "+username+" "+password) //***************
         }
     }
 
     @Override
     public void login(String username, String password) {
-        if(fileSystem==FS_DIRECTORY_SERVICE){
+        if(fileSystem == FS_DIRECTORY_SERVICE){
             sendRequestUdp(LOGIN+" "+username+" "+password) //******************
         }
     }
 
     @Override
     public void logout() {
-        if(fileSystem==FS_DIRECTORY_SERVICE){
+        if(fileSystem == FS_DIRECTORY_SERVICE){
             sendRequestUdp(LOGIN+" "+username+" "+password) //******************
         }
     }
     
     @Override
     public void connect(String serverName) {
-        if(fileSystem==FS_DIRECTORY_SERVICE||fileSystem==FS_SERVER){
-            sendRequestTCP("NAO SEI O COMANDO") //******************************
+        if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){ //AQUI, MÃO SE PODE CONNECTAR QUANDO ESTÁ EM LOCAL?
+            if(client.getServerConnection(serverName) != null){
+                if(!client.checkIfImConnected(serverName)){
+                    client.getCurrentConnection().createSocket();
+                    try {
+                        Object obj = client.receiveResponseTcp();
+                        if(obj instanceof MSG){
+                            MSG msg = (MSG)obj;
+                            if(msg.getMSGCode() == Constants.CODE_CONNECT_OK){
+                                //Mandar ao Server o clientInfo
+                                //Mandar ao DS que estou connectado com este servidor
+                            }
+                            else
+                                throw new Exceptions.ConnectFailure();
+                        }
+                    } catch (IOException | ClassNotFoundException ex) {
+                        ex.printStackTrace();
+                    }
+                    
+                }
+                else
+                    throw new Exceptions.AlreadyConnected();
+            }
+            else
+                throw new Exceptions.ServerDoesntExist();
         }
     }
     
     @Override
     public void disconnect() {
-        if(fileSystem==FS_DIRECTORY_SERVICE||fileSystem==FS_SERVER){
+        if(fileSystem == FS_DIRECTORY_SERVICE||fileSystem==FS_SERVER){
             sendRequestTCP("NAO SEI O COMANDO") //******************************
         }
     }
 
     @Override
     public void list(String type) {
-        if(fileSystem==FS_DIRECTORY_SERVICE||fileSystem==FS_SERVER){
+        if(fileSystem == FS_DIRECTORY_SERVICE||fileSystem==FS_SERVER){
             sendRequestUDP(LIST+" "+type) //************************************
         }
     }
     
     @Override
     public void copyFile(String fileName, String destinationPath) {
-        if(fileSystem==FS_SERVER){
+        if(fileSystem == FS_SERVER){
             sendRequestTCP(CP+" "+fileName+" "+destinationPath) //**************
         }else if(fileSystem==FS_LOCAL){
-            InputStream input = null;
-            OutputStream output = null;
             try {
-                input = new FileInputStream(localDirectory+"\\"+fileName);
-                output = new FileOutputStream(destinationPath);
+                InputStream input = new FileInputStream(localDirectory+"\\"+fileName);
+                OutputStream output = new FileOutputStream(destinationPath);
                 byte[] buf = new byte[1024];
                 int bytesRead;
                 while ((bytesRead = input.read(buf)) > 0)
