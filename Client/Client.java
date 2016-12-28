@@ -14,24 +14,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Client {    
     private DatagramSocket udpSocket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
-    private String cmd;
     private ObjectInputStream oIn;
     private ObjectOutputStream oOut;
     private InetAddress directoryServiceIp;
     private int directoryServicePort;
-    private MSG msg;
-    private String currentPath;
-    ChatThreadReceive chatThread;
-    HeartbeatThreadSend heartBeatThread;
-    
-    Map<String, ServerConnection> serverList;
-    List<ClientInfo> clientList;
+    private String line;
+    private String username;
+    private ChatThreadReceive chatThread;
+    private HeartbeatThreadSend heartBeatThread;
+    private DistributedFileSystem fileSystem;
+    private Map<String, ServerConnection> serverList;
+    private List<ClientInfo> clientList;
+    private ServerConnection currentConnection;
     
     public Client(InetAddress directoryServiceIp, int directoryServicePort) throws SocketException{
         udpSocket = new DatagramSocket();
@@ -40,16 +38,34 @@ public class Client {
         this.directoryServicePort = directoryServicePort;
         serverList = new HashMap<>();
         clientList = new ArrayList<>();
-        currentPath = "DS";
+        fileSystem = new DistributedFileSystem(this);
+        username = null;
+        currentConnection = null;
     }
     
-    public InetAddress getDirectoryServiceIp() { return directoryServiceIp; }
+    public InetAddress getDirectoryServiceIp() { 
+        return directoryServiceIp; 
+    }
 
-    public void setDirectoryServiceIp(InetAddress directoryServiceIp) { this.directoryServiceIp = directoryServiceIp; }
+    public ServerConnection getCurrentConnection() {
+        return currentConnection;
+    }
+    
+    public void setCurrentConnection(ServerConnection currentConnection) {
+        this.currentConnection = currentConnection;
+    }
+    
+    public void setDirectoryServiceIp(InetAddress directoryServiceIp) { 
+        this.directoryServiceIp = directoryServiceIp; 
+    }
 
-    public int getDirectoryServicePort() { return directoryServicePort; }
+    public int getDirectoryServicePort() { 
+        return directoryServicePort; 
+    }
 
-    public void setDirectoryServicePort(int directoryServicePort) { this.directoryServicePort = directoryServicePort; }
+    public void setDirectoryServicePort(int directoryServicePort) { 
+        this.directoryServicePort = directoryServicePort; 
+    }
     
     private void fillMsg(String line){
         String [] lineSplit = line.split(" ");
@@ -58,14 +74,11 @@ public class Client {
     
     public void sendRequestUdp(String cmd) throws IOException{
         msg = new MSG();
-        String line = Constants.CLIENT+" "+cmd;
-        fillMsg(line);
-        //Implementar o resto
+        fillMsg(Constants.CLIENT+" "+cmd);
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         oOut = new ObjectOutputStream(bOut);
         oOut.writeObject(msg);
         oOut.flush();
-        
         packet = new DatagramPacket(bOut.toByteArray(), bOut.toByteArray().length, directoryServiceIp, directoryServicePort);
         udpSocket.send(packet);
     }
@@ -80,20 +93,25 @@ public class Client {
     
     public void sendRequestTcp(String cmd) throws IOException{
         msg = new MSG();
-        String line = Constants.CLIENT+" "+cmd;
-        fillMsg(line);
-        
-        ServerConnection s = serverList.get(getWhereAmI());
-        oOut = new ObjectOutputStream(s.getSocket().getOutputStream());
+        fillMsg(Constants.CLIENT+" "+cmd);
+        oOut = new ObjectOutputStream(currentConnection.getSocket().getOutputStream());
         oOut.writeObject(msg);
         oOut.flush();
     }
     
     public Object receiveResponseTcp() throws IOException, ClassNotFoundException{
-        ServerConnection s = serverList.get(getWhereAmI());
-        oIn = new ObjectInputStream(s.getSocket().getInputStream());
+        oIn = new ObjectInputStream(currentConnection.getSocket().getInputStream());
         
         return oIn.readObject();
+    }
+    
+    public ServerConnection getServerConnection(String serverName){
+        return serverList.get(serverName);
+    }
+    
+    public boolean checkIfImConnected(String serverName){
+        return getServerConnection(serverName) == null ? 
+                false : getServerConnection(serverName).isConnected();
     }
     
     public void closeUdpSocket(){
@@ -167,22 +185,7 @@ public class Client {
         list += "\n---------------------------------------\n";
         return list;
     } 
-    
-    private boolean serverExists(String serverName){
-        for (Map.Entry<String, ServerConnection> entry : serverList.entrySet()) {
-            String key = entry.getKey();
-            if(key.equals(serverName)){
-               return true; 
-            }
-        }
-        return false;
-    }
-    
-    private String getWhereAmI(){
-        String []s = currentPath.split("/");
-        return s[0].trim();
-    } 
-    
+        
     private int processClientCommand(String line){
         String [] lineSplit = line.split(" ");
         String cmd = lineSplit[0].trim();
@@ -190,26 +193,7 @@ public class Client {
         if(lineSplit.length <= 2){
             if(cmd.equalsIgnoreCase(Constants.CMD_CONNECT)){
                 String serverName = lineSplit[1].trim();
-                if(serverExists(serverName)){
-                    if(!serverList.get(serverName).isConnected()){
-                        ServerConnection server = serverList.get(serverName);
-                        server.createSocket();
-                        Object obj = null;
-                        try {
-                            obj = receiveResponseTcp();
-                        } catch (IOException | ClassNotFoundException ex) {
-                            ex.printStackTrace();
-                        }
-                        if(obj instanceof MSG){
-                            msg = (MSG)obj;
-                            
-                        }
-                        return Constants.CODE_CONNECT_OK; //1000 só por enquanto
-                    }else
-                        return Constants.CODE_SERVER_ALREADY_CONNECTED;
-                }
-                else
-                    return Constants.CODE_SERVER_DOESNT_EXIST;
+                
             }else
                 return Constants.CODE_CMD_NOT_RECOGNIZED;
         }
@@ -294,36 +278,70 @@ public class Client {
         }
     }
     
+    private void processCommand(String line) throws Exceptions.CmdNotRecognized, 
+            Exceptions.CmdFailure{
+        String [] commands = line.split(" ");
+        
+        if(commands.length == 0)
+            throw  new Exceptions.CmdFailure();
+        
+        String cmd1 = commands[0].trim();
+        
+        switch(cmd1){
+            case Constants.CMD_REGISTER:
+                if(commands.length == 3) {
+                    fileSystem.register(commands[1].trim(), commands[2].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_LOGIN:
+                if(commands.length == 3) {
+                    fileSystem.login(commands[1].trim(), commands[2].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_LOGOUT:
+                if(commands.length == 1) {
+                    fileSystem.logout();
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_LIST:
+                if(commands.length == 2) {
+                    fileSystem.list(commands[1].trim().toUpperCase());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_CONNECT:
+                if(commands.length == 1) {
+                    fileSystem.connect(commands[1].trim().toUpperCase());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_DISCONNECT:
+                if(commands.length == 1) {
+                    fileSystem.disconnect();
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_SWITCH:
+                if(commands.length == 2) {
+                    fileSystem.switchSystemType(commands[1].trim().toUpperCase());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            default: throw new Exceptions.CmdNotRecognized();
+        }
+    }
+    
     public void runClient(){
         while(true){
             try{
-                System.out.print(currentPath+" >> ");
-                cmd = new Scanner(System.in).nextLine();
-                
-                int code = processClientCommand(cmd);
-                
-                String where = getWhereAmI();
-                if(where == null){
-                    throw new Exceptions.CurrenthPath();
-                }
-                
-                if(where.equalsIgnoreCase(Constants.DS)){
-                    sendRequestUdp(cmd);
-                    Object obj = receiveResponseUdp();
+                System.out.print(username + "@" + fileSystem.getCurrentPath() + ">> ");
+                line = new Scanner(System.in).nextLine();
+                processCommand(line);
 
-                    if(obj instanceof MSG){
-                        msg = (MSG)obj;
-                        processDirectoryServiceCommand(msg);
-                    } 
-                }else{
-//                    sendRequestTcp(cmd);
-                    Object obj = receiveResponseTcp();
-                    if(obj instanceof MSG){
-                        msg = (MSG)obj;
-                        processServerCommand(msg);
-                    }
-                }
-                processError(msg.getMSGCode());
+//                processError(msg.getMSGCode());
                 
             } catch(Exception ex) {
                 System.out.println("\n"+ex);
@@ -340,11 +358,8 @@ public class Client {
         }
         
         try {
-            InetAddress clientIp = null;
-            int clientPort = -1;
-            
-            clientIp = InetAddress.getByName(args[0]);
-            clientPort = Integer.parseInt(args[1]);
+            InetAddress clientIp = InetAddress.getByName(args[0]);
+            int clientPort = Integer.parseInt(args[1]);
             new Client(clientIp, clientPort).runClient();
             
         } catch (UnknownHostException | SocketException ex) {

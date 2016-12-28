@@ -20,51 +20,84 @@ public class Exceptions{
     
     //REGISTER
     static class RegisterFailure extends Exception{
-        public RegisterFailure(){ super("You're missing some parameters"); }
+        public RegisterFailure(){ 
+            super("You're missing some parameters"); 
+        }
     }
     
     static class RegisterClientAlreadyExists extends Exception{
-        public RegisterClientAlreadyExists(){ super("The username you're trying to regist already exists"); }
+        public RegisterClientAlreadyExists(){ 
+            super("The username you're trying to regist already exists"); 
+        }
     }
     
     //LOGIN    
     static class LoginFailure extends Exception{
-        public LoginFailure(){ super("Check your username or password"); }
+        public LoginFailure(){ 
+            super("Check your username or password"); 
+        }
     }
     
     static class AlreadyLoggedIn extends Exception{
-        public AlreadyLoggedIn(){ super("You're already logged in"); }
+        public AlreadyLoggedIn(){ 
+            super("You're already logged in"); 
+        }
     }
     
     static class NotLoggedIn extends Exception{
-        public NotLoggedIn(){ super("You need to login first"); }
+        public NotLoggedIn(){ 
+            super("You need to login first"); 
+        }
     }
     
     //List
     static class ListFailure extends Exception{
-        public ListFailure(){ super("List Failures"); }
+        public ListFailure(){ 
+            super("List Failures"); 
+        }
     }
     
     //Chat
     static class ChatFailure extends Exception{
-        public ChatFailure(){ super("Chat failure"); }
+        public ChatFailure(){ 
+            super("Chat failure"); 
+        }
     }
-    
     
     //CLIENT 
     static class CurrenthPath extends Exception{
-        public CurrenthPath(){ super("Current Path not rigth"); }
+        public CurrenthPath(){ 
+            super("Current Path not rigth"); 
+        }
     }
     
     static class ConnectFailure extends Exception{
-        public ConnectFailure(){ super("Connect failure"); }
+        public ConnectFailure(){ 
+            super("Connect failure"); 
+        }
     }
     
     static class AlreadyConnected extends Exception{
-        public AlreadyConnected(){ super("Already connected to this server"); }
+        public AlreadyConnected(){ 
+            super("Already connected to this server"); 
+        }
     }
     
     static class ServerDoesntExist extends Exception{
-        public ServerDoesntExist(){ super("There is no server with this name"); }
+        public ServerDoesntExist(){ 
+            super("There is no server with this name"); 
+        }
+    }
+    
+    static class NotConnectedToServer extends Exception{
+        public NotConnectedToServer(){ 
+            super("You're not connected to this server"); 
+        }
+    }
+    
+    static class SwitchingLocalNotPossible extends Exception{
+        public SwitchingLocalNotPossible(){ 
+            super("You can't change to local because you're not connected to any server"); 
+        }
     }
 }
