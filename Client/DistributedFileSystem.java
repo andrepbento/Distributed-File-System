@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 /**
  *
@@ -47,97 +48,116 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     
     // CHAMAR ESTA FUNCAO SEMPRE QUE O CMD TENHA lenght=1 [Comando interno]
     public void switchSystemType(String to) {
-        if(to.equals(Constants.DS)){ //MUDAR PARA DS
-            fileSystem = FS_DIRECTORY_SERVICE;
-        }else if(to.equals(Constants.LOCAL)){ //MUDAR PARA LOCAL
-            if(client.getCurrentConnection() != null){
-                fileSystem = FS_LOCAL;
-            }
-            else
-                throw new Exceptions.SwitchingLocalNotPossible();
-        }else{ //MUDAR PARA "SERVER_X"
-            if(client.getServerConnection(to) != null){
-                if(client.checkIfImConnected(to)){
-                    fileSystem = FS_SERVER;
-                    client.setCurrentConnection(client.getServerConnection(to));
+        try{
+            if(to.equalsIgnoreCase(Constants.DS)){ //MUDAR PARA DS
+                fileSystem = FS_DIRECTORY_SERVICE;
+            }else if(to.equalsIgnoreCase(Constants.LOCAL)){ //MUDAR PARA LOCAL
+                if(client.getCurrentConnection() != null){
+                    fileSystem = FS_LOCAL;
+                }
+                else
+                    throw new Exceptions.SwitchingLocalNotPossible();
+            }else{ //MUDAR PARA "SERVER_X"
+                if(client.getCurrentConnection().getServerName().equals(to)){
+                    if(client.checkIfImConnected(to)){
+                        fileSystem = FS_SERVER;
+                        client.setCurrentConnection(client.getServerConnection(to));
+                    }else
+                        throw new Exceptions.NotConnectedToServer();
                 }else
-                    throw new Exceptions.NotConnectedToServer();
-            }else
-                throw new Exceptions.ServerDoesntExist();
+                    throw new Exceptions.ServerDoesntExist();
+            }
+        }catch(Exception ex){
+            ex.printStackTrace();
         }
     }
     
     @Override
     public void register(String username, String password) {
         if(fileSystem == FS_DIRECTORY_SERVICE){
-            sendRequestUdp(REGISTER+" "+username+" "+password) //***************
+            client.sendRequestUdp(Constants.CMD_REGISTER+" "+username+" "+password);
+            client.receiveResponseUdp();
+            client.processDirectoryServiceCommand();
         }
     }
 
     @Override
     public void login(String username, String password) {
         if(fileSystem == FS_DIRECTORY_SERVICE){
-            sendRequestUdp(LOGIN+" "+username+" "+password) //******************
+            client.sendRequestUdp(Constants.CMD_LOGIN+" "+username+" "+password);
+            client.receiveResponseUdp();
+            client.processDirectoryServiceCommand();
         }
     }
 
     @Override
     public void logout() {
         if(fileSystem == FS_DIRECTORY_SERVICE){
-            sendRequestUdp(LOGIN+" "+username+" "+password) //******************
+            client.sendRequestUdp(Constants.CMD_LOGOUT);
+            client.receiveResponseUdp();
+            client.processDirectoryServiceCommand();
         }
     }
     
     @Override
     public void connect(String serverName) {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){ //AQUI, MÃO SE PODE CONNECTAR QUANDO ESTÁ EM LOCAL?
-            if(client.getServerConnection(serverName) != null){
-                if(!client.checkIfImConnected(serverName)){
-                    client.getCurrentConnection().createSocket();
-                    try {
-                        Object obj = client.receiveResponseTcp();
-                        if(obj instanceof MSG){
-                            MSG msg = (MSG)obj;
-                            if(msg.getMSGCode() == Constants.CODE_CONNECT_OK){
-                                //Mandar ao Server o clientInfo
-                                //Mandar ao DS que estou connectado com este servidor
-                            }
-                            else
-                                throw new Exceptions.ConnectFailure();
-                        }
-                    } catch (IOException | ClassNotFoundException ex) {
-                        ex.printStackTrace();
+            try{
+                if(client.getServerConnection(serverName) != null){
+                    if(!client.checkIfImConnected(serverName)){
+                        client.getServerConnection(serverName).createSocket();
+                        client.receiveResponseTcp(serverName);  
+                        MSG msg = new MSG();
+                        list("-c");
+                        if(client.getMyClientInfo() != null){
+                            msg.setClientList(Arrays.asList(client.getMyClientInfo()));
+                            client.sendRequestUdp(Constants.CMD_CONNECT + " " + 
+                                    client.getUsername() + " " + serverName);
+                            client.setCurrentConnection(client.getServerConnection(serverName));
+                            client.getCurrentConnection().setCurrentPath(serverName);
+                            client.getCurrentConnection().setConnected(true);
+                            fileSystem = FS_SERVER;
+                            client.sendRequestTcp(msg);
+                        }else
+                            throw new Exceptions.MyClientInfoNotFound();
                     }
-                    
+                    else
+                        throw new Exceptions.AlreadyConnected();
                 }
                 else
-                    throw new Exceptions.AlreadyConnected();
+                    throw new Exceptions.ServerDoesntExist();
+            }catch(Exception ex){
+                System.out.println(ex);
             }
-            else
-                throw new Exceptions.ServerDoesntExist();
         }
     }
     
     @Override
     public void disconnect() {
-        if(fileSystem == FS_DIRECTORY_SERVICE||fileSystem==FS_SERVER){
-            sendRequestTCP("NAO SEI O COMANDO") //******************************
+        if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
+            MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DISCONNECT));
+            client.sendRequestTcp(msg);
         }
     }
 
     @Override
     public void list(String type) {
-        if(fileSystem == FS_DIRECTORY_SERVICE||fileSystem==FS_SERVER){
-            sendRequestUDP(LIST+" "+type) //************************************
+        if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
+            client.sendRequestUdp("LIST"+" "+type);
+            client.receiveResponseUdp();
+            client.processDirectoryServiceCommand();
         }
     }
     
     @Override
     public void copyFile(String fileName, String destinationPath) {
-        if(fileSystem == FS_SERVER){
-            sendRequestTCP(CP+" "+fileName+" "+destinationPath) //**************
-        }else if(fileSystem==FS_LOCAL){
-            try {
+        try {
+            if(fileSystem == FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_COPY_FILE, 
+                        fileName, destinationPath));
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
+            }else if(fileSystem == FS_LOCAL){
                 InputStream input = new FileInputStream(localDirectory+"\\"+fileName);
                 OutputStream output = new FileOutputStream(destinationPath);
                 byte[] buf = new byte[1024];
@@ -146,18 +166,16 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                     output.write(buf, 0, bytesRead);
                 input.close();
                 output.close();
-            } catch(FileNotFoundException ex) {
-                ex.printStackTrace();
-            } catch (IOException ex) {
-                ex.printStackTrace();
             }
+        } catch(Exception ex) {
+             System.out.println(ex);
         }
     }
 
     @Override
     public void moveFile(String fileName, String destinationPath) {
         if(fileSystem==FS_SERVER){
-            sendRequestTCP(CP+" "+fileName+" "+destinationPath) //**************
+            //sendRequestTCP(CP+" "+fileName+" "+destinationPath) //**************
         }else if(fileSystem==FS_LOCAL){
             copyFile(fileName, destinationPath);
             new File(localDirectory+"\\"+fileName).delete();
@@ -166,13 +184,13 @@ public class DistributedFileSystem implements ClientMethodsInterface {
 
     @Override
     public void changeWorkingDirectory(String newWorkingDirectoryPath) {
-        if(fileSystem==FS_SERVER){
-            sendRequestTCP(CD+" "+newWorkingDirectoryPath) //**************
+        if(fileSystem == FS_SERVER){
+            //sendRequestTCP(CD+" "+newWorkingDirectoryPath) //**************
         }else if(fileSystem==FS_LOCAL){
-            if(newWorkingDirectoryPath.split("\\").length==1){
+            if(newWorkingDirectoryPath.split("\\").length == 1){
                 if(newWorkingDirectoryPath.equals("..")){
-                    String 
-                    File folder = new File(newWorkingDirectoryPath);
+                    
+                    //File folder = new File(newWorkingDirectoryPath);
                 }else{
                     
                 }
@@ -183,7 +201,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 //caminho completo
                 try{
                     File folder = new File(newWorkingDirectoryPath);
-                    localDirectory=folder.getCanonicalPath();
+                    localDirectory = folder.getCanonicalPath();
                 } catch(IOException ex) {
                     ex.printStackTrace();
                 }
@@ -192,10 +210,10 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     }
 
     @Override
-    public void getWorkingDirContent() 
-            throws Exceptions.CmdFailure {
+    public void getWorkingDirContent() {
+            //throws Exceptions.CmdFailure {
         if(fileSystem==FS_SERVER){
-            sendRequestTCP(LS)
+            //sendRequestTCP(LS)
             // PEDIR "ls" AO SERVIDOR EM QUESTAO
         }else if(fileSystem==FS_LOCAL){
             File folder = new File(localDirectory);
@@ -207,15 +225,14 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 else if (listOfFiles[i].isDirectory())
                     System.out.println("d: " + listOfFiles[i].getName());
             }
-            throw new Exceptions.;
+            //throw new Exceptions.;
         }
     }
 
     @Override
-    public void getFileContent(String fileName)
-            throws Exceptions.CmdFailure {
+    public void getFileContent(String fileName) {
         if(fileSystem==FS_SERVER){
-            sendRequestTCP(CAT) //**********************************************
+            //sendRequestTCP(CAT) //**********************************************
         }else if(fileSystem==FS_LOCAL){
             try{
                 BufferedReader in = new BufferedReader(
@@ -225,10 +242,8 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 while((line = in.readLine()) != null)
                     System.out.println(line);
                 in.close();
-            } catch(FileNotFoundException ex) {
-                throw new Exceptions.CmdFailure();
-            } catch(IOException ex) {
-                throw new Exceptions.CmdFailure();
+            }catch(Exception ex){
+                ex.printStackTrace();
             }
         }
     }
@@ -236,7 +251,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void removeFile(String fileName) {
         if(fileSystem==FS_SERVER){
-            sendRequestTCP(RM+" "+fileName) //**********************************
+            //sendRequestTCP(RM+" "+fileName) //**********************************
         }else if(fileSystem==FS_LOCAL){
             File file = new File(localDirectory+"\\"+fileName);
             if(file.delete())

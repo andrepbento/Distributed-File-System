@@ -23,6 +23,7 @@ public class Client {
     private InetAddress directoryServiceIp;
     private int directoryServicePort;
     private String line;
+    private MSG msg;
     private String username;
     private ChatThreadReceive chatThread;
     private HeartbeatThreadSend heartBeatThread;
@@ -34,6 +35,7 @@ public class Client {
     public Client(InetAddress directoryServiceIp, int directoryServicePort) throws SocketException{
         udpSocket = new DatagramSocket();
         packet = null;
+        msg = null;
         this.directoryServiceIp = directoryServiceIp;
         this.directoryServicePort = directoryServicePort;
         serverList = new HashMap<>();
@@ -47,6 +49,14 @@ public class Client {
         return directoryServiceIp; 
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+    
     public ServerConnection getCurrentConnection() {
         return currentConnection;
     }
@@ -72,37 +82,70 @@ public class Client {
         msg.getCMD().addAll(Arrays.asList(lineSplit));
     }
     
-    public void sendRequestUdp(String cmd) throws IOException{
-        msg = new MSG();
-        fillMsg(Constants.CLIENT+" "+cmd);
-        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-        oOut = new ObjectOutputStream(bOut);
-        oOut.writeObject(msg);
-        oOut.flush();
-        packet = new DatagramPacket(bOut.toByteArray(), bOut.toByteArray().length, directoryServiceIp, directoryServicePort);
-        udpSocket.send(packet);
+    public void sendRequestUdp(String cmd){
+        try {
+            msg = new MSG();
+            fillMsg(Constants.CLIENT+" "+cmd);
+            ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+            oOut = new ObjectOutputStream(bOut);
+            oOut.writeObject(msg);
+            oOut.flush();
+            packet = new DatagramPacket(bOut.toByteArray(), bOut.toByteArray().length, directoryServiceIp, directoryServicePort);
+            udpSocket.send(packet);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
     
-    public Object receiveResponseUdp() throws IOException, ClassNotFoundException{
-        packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
-        udpSocket.receive(packet);
-        oIn = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
-
-        return oIn.readObject();
+    public void receiveResponseUdp(){
+        try {
+            packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
+            udpSocket.receive(packet);
+            oIn = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
+            
+            Object obj = oIn.readObject();
+            if(obj instanceof MSG){
+                this.msg = (MSG)obj;
+            }
+        } catch (IOException | ClassNotFoundException ex) {
+            ex.printStackTrace();
+        }
     }
     
-    public void sendRequestTcp(String cmd) throws IOException{
-        msg = new MSG();
-        fillMsg(Constants.CLIENT+" "+cmd);
-        oOut = new ObjectOutputStream(currentConnection.getSocket().getOutputStream());
-        oOut.writeObject(msg);
-        oOut.flush();
+    public void sendRequestTcp(MSG msg){
+        try {
+            oOut = new ObjectOutputStream(currentConnection.getSocket().getOutputStream());
+            oOut.writeObject(msg);
+            oOut.flush();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
     
-    public Object receiveResponseTcp() throws IOException, ClassNotFoundException{
-        oIn = new ObjectInputStream(currentConnection.getSocket().getInputStream());
-        
-        return oIn.readObject();
+    public void receiveResponseTcp() {
+        try{
+            oIn = new ObjectInputStream(getCurrentConnection().
+                    getSocket().getInputStream());
+            Object obj = oIn.readObject();
+            if(obj instanceof MSG){
+                this.msg = (MSG)obj;
+            }
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
+    
+    public void receiveResponseTcp(String serverName) {
+        try{
+            oIn = new ObjectInputStream(getServerConnection(serverName).
+                    getSocket().getInputStream());
+            Object obj = oIn.readObject();
+            if(obj instanceof MSG){
+                this.msg = (MSG)obj;
+            }
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
     }
     
     public ServerConnection getServerConnection(String serverName){
@@ -130,19 +173,16 @@ public class Client {
     private void updateClientList(List<ClientInfo> list){ 
         clientList.clear();
         clientList = list; 
-        System.out.println("Client List Updated\n---------------------------------------");
-        System.out.print(listClients());
-        
     }
     
-    private String listClients(){
-        String list = "";
+    private void listClients(){
+        String list = "Client List Updated\n---------------------------------------\n";
         for (ClientInfo c : clientList) {
             list += c.getUsername() + "\n";
         }
         
-        list += "---------------------------------------\n";
-        return list;
+        list += "---------------------------------------\n\n";
+        System.out.print(list);
     } 
     
     private void updateServerList(List<ServerInfo> list){
@@ -167,13 +207,13 @@ public class Client {
             }
         }
         
-        System.out.println("\tServer List Updated\n---------------------------------------\n");
         System.out.print(listServers());
     }
     
     private String listServers(){
-        String list = null;
-        list = ("Server Name \tState (Connected/Not Connected\n");
+        String list = "\tServer List Updated\n";
+        list += ("---------------------------------------\n"
+                + "Server Name \tState (Connected/Not Connected\n");
         for (Map.Entry<String, ServerConnection> entry : serverList.entrySet()) {
             String serverName = entry.getKey();
             ServerConnection serverL = entry.getValue();
@@ -185,33 +225,36 @@ public class Client {
         list += "\n---------------------------------------\n";
         return list;
     } 
-        
-    private int processClientCommand(String line){
-        String [] lineSplit = line.split(" ");
-        String cmd = lineSplit[0].trim();
-        
-        if(lineSplit.length <= 2){
-            if(cmd.equalsIgnoreCase(Constants.CMD_CONNECT)){
-                String serverName = lineSplit[1].trim();
-                
-            }else
-                return Constants.CODE_CMD_NOT_RECOGNIZED;
+      
+    public ClientInfo getMyClientInfo() throws UnknownHostException{
+        for (ClientInfo c : clientList) {
+//            if(c.equals(new ClientInfo(InetAddress.getByName(InetAddress.getLocalHost().getHostAddress())
+//                    , udpSocket.getLocalPort())))
+            if(c.equals(new ClientInfo(InetAddress.getByName("25.10.89.1")
+                    , udpSocket.getLocalPort())))
+                    return c;
         }
-        
-        return Constants.CODE_CMD_FAILURE;
+        return null;
     }
-    
-    private void processServerCommand(MSG msg){
+        
+    public void processServerCommand() throws Exception{
+        
+        if(msg == null)
+            return;
+        
         switch(msg.getMSGCode()){
-            case Constants.CODE_CONNECT_OK: 
-                System.out.println("Connected to: " + getWhereAmI());
-                
+            case Constants.CODE_DISCONNECT_OK:
+                sendRequestUdp(Constants.CMD_DISCONNECT + " " + username + " " + 
+                        currentConnection.getServerName());
                 break;
             default: break;
         }
     }
     
-    private void processDirectoryServiceCommand(MSG msg){
+    public void processDirectoryServiceCommand(){
+        if(msg == null)
+            return;
+        
         switch(msg.getMSGCode()){
             case Constants.CODE_LOGOUT_OK:
                 if(heartBeatThread != null)
@@ -223,6 +266,7 @@ public class Client {
                 System.out.println("You logged out"); 
                 break;
             case Constants.CODE_LOGIN_OK:
+                username = msg.getCMD().get(0);
                 heartBeatThread = new HeartbeatThreadSend(directoryServiceIp, 
                         udpSocket.getLocalPort());
                 heartBeatThread.start();
@@ -248,34 +292,30 @@ public class Client {
         }
     }
     
-    private void processError(int code) throws Exceptions.ConnectFailure, 
-            Exceptions.ListFailure, Exceptions.CmdFailure, Exceptions.CmdNotRecognized, 
-            Exceptions.RegisterFailure, Exceptions.RegisterClientAlreadyExists, 
-            Exceptions.NotLoggedIn, Exceptions.AlreadyLoggedIn, Exceptions.LoginFailure, 
-            Exceptions.ChatFailure{
-        switch(code){
-            case Constants.CODE_CONNECT_FAILURE: 
-                throw  new Exceptions.ConnectFailure();
-            case Constants.CODE_LIST_FAILURE: 
-                throw new Exceptions.ListFailure();
-            case Constants.CODE_CMD_NOT_RECOGNIZED:  
-                throw new Exceptions.CmdNotRecognized();
-            case Constants.CODE_REGISTER_FAILURE: 
-                throw new Exceptions.RegisterFailure();
-            case Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS: 
-                throw new Exceptions.RegisterClientAlreadyExists();
-            case Constants.CODE_LOGIN_NOT_LOGGED_IN:
-                throw new Exceptions.NotLoggedIn();
-            case Constants.CODE_LOGIN_ALREADY_LOGGED:
-                throw new Exceptions.AlreadyLoggedIn();
-            case Constants.CODE_LOGIN_FAILURE:
-                throw new Exceptions.LoginFailure();
-            case Constants.CODE_CHAT_FAILURE:
-                throw new Exceptions.ChatFailure();
-            case Constants.CODE_CMD_FAILURE: 
-                throw new Exceptions.CmdFailure();
-            default: break;
-        }
+    public void processError(int code) throws Exception{
+            switch(code){
+                case Constants.CODE_CONNECT_FAILURE: 
+                    throw  new Exceptions.ConnectFailure();
+                case Constants.CODE_LIST_FAILURE: 
+                    throw new Exceptions.ListFailure();
+                case Constants.CODE_CMD_NOT_RECOGNIZED:  
+                    throw new Exceptions.CmdNotRecognized();
+                case Constants.CODE_REGISTER_FAILURE: 
+                    throw new Exceptions.RegisterFailure();
+                case Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS: 
+                    throw new Exceptions.RegisterClientAlreadyExists();
+                case Constants.CODE_LOGIN_NOT_LOGGED_IN:
+                    throw new Exceptions.NotLoggedIn();
+                case Constants.CODE_LOGIN_ALREADY_LOGGED:
+                    throw new Exceptions.AlreadyLoggedIn();
+                case Constants.CODE_LOGIN_FAILURE:
+                    throw new Exceptions.LoginFailure();
+                case Constants.CODE_CHAT_FAILURE:
+                    throw new Exceptions.ChatFailure();
+                case Constants.CODE_CMD_FAILURE: 
+                    throw new Exceptions.CmdFailure();
+                default: break;
+            }
     }
     
     private void processCommand(String line) throws Exceptions.CmdNotRecognized, 
@@ -285,7 +325,7 @@ public class Client {
         if(commands.length == 0)
             throw  new Exceptions.CmdFailure();
         
-        String cmd1 = commands[0].trim();
+        String cmd1 = commands[0].toUpperCase().trim();
         
         switch(cmd1){
             case Constants.CMD_REGISTER:
@@ -313,8 +353,8 @@ public class Client {
                 }
                 throw new Exceptions.CmdFailure();
             case Constants.CMD_CONNECT:
-                if(commands.length == 1) {
-                    fileSystem.connect(commands[1].trim().toUpperCase());
+                if(commands.length == 2) {
+                    fileSystem.connect(commands[1].trim());
                     break;
                 }
                 throw new Exceptions.CmdFailure();
@@ -326,7 +366,25 @@ public class Client {
                 throw new Exceptions.CmdFailure();
             case Constants.CMD_SWITCH:
                 if(commands.length == 2) {
-                    fileSystem.switchSystemType(commands[1].trim().toUpperCase());
+                    fileSystem.switchSystemType(commands[1].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_COPY_FILE:
+                if(commands.length == 3) {
+                    fileSystem.copyFile(commands[1].trim(), commands[2].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_MOVE_FILE:
+                if(commands.length == 3) {
+                    fileSystem.moveFile(commands[1].trim(), commands[2].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_CD_DIR:
+                if(commands.length == 2) {
+                    fileSystem.changeWorkingDirectory(commands[1].trim());
                     break;
                 }
                 throw new Exceptions.CmdFailure();
@@ -340,11 +398,10 @@ public class Client {
                 System.out.print(username + "@" + fileSystem.getCurrentPath() + ">> ");
                 line = new Scanner(System.in).nextLine();
                 processCommand(line);
-
-//                processError(msg.getMSGCode());
+                processError(msg.getMSGCode());
                 
             } catch(Exception ex) {
-                System.out.println("\n"+ex);
+                System.out.println(ex);
             }
         }
         //client.closeUdpSocket();

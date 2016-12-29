@@ -100,4 +100,10 @@ public class Exceptions{
             super("You can't change to local because you're not connected to any server"); 
         }
     }
+    
+    static class MyClientInfoNotFound extends Exception{
+        public MyClientInfoNotFound(){ 
+            super("Couldn't find my client info"); 
+        }
+    }
 }
