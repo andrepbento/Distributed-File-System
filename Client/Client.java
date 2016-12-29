@@ -230,7 +230,7 @@ public class Client {
         for (ClientInfo c : clientList) {
 //            if(c.equals(new ClientInfo(InetAddress.getByName(InetAddress.getLocalHost().getHostAddress())
 //                    , udpSocket.getLocalPort())))
-            if(c.equals(new ClientInfo(InetAddress.getByName("25.10.89.1")
+            if(c.equals(new ClientInfo(InetAddress.getByName("192.168.1.35")
                     , udpSocket.getLocalPort())))
                     return c;
         }
@@ -328,6 +328,12 @@ public class Client {
         String cmd1 = commands[0].toUpperCase().trim();
         
         switch(cmd1){
+            case Constants.CMD_SWITCH:
+                if(commands.length == 2) {
+                    fileSystem.switchSystemType(commands[1].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
             case Constants.CMD_REGISTER:
                 if(commands.length == 3) {
                     fileSystem.register(commands[1].trim(), commands[2].trim());
@@ -346,7 +352,7 @@ public class Client {
                     break;
                 }
                 throw new Exceptions.CmdFailure();
-            case Constants.CMD_LIST:
+           case Constants.CMD_LIST:
                 if(commands.length == 2) {
                     fileSystem.list(commands[1].trim().toUpperCase());
                     break;
@@ -361,12 +367,6 @@ public class Client {
             case Constants.CMD_DISCONNECT:
                 if(commands.length == 1) {
                     fileSystem.disconnect();
-                    break;
-                }
-                throw new Exceptions.CmdFailure();
-            case Constants.CMD_SWITCH:
-                if(commands.length == 2) {
-                    fileSystem.switchSystemType(commands[1].trim());
                     break;
                 }
                 throw new Exceptions.CmdFailure();
@@ -385,6 +385,42 @@ public class Client {
             case Constants.CMD_CD_DIR:
                 if(commands.length == 2) {
                     fileSystem.changeWorkingDirectory(commands[1].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_LS_DIR:
+                if(commands.length == 1){
+                    fileSystem.getWorkingDirContent();
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_CAT_FILE:
+                if(commands.length == 2){
+                    fileSystem.getFileContent(commands[1].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_RM_FILE:
+                if(commands.length == 2){
+                    fileSystem.removeFile(commands[1].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_MK_DIR:
+                if(commands.length == 2) {
+                    fileSystem.makeDir(commands[1].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_DOWNLOAD_FILE:
+                if(commands.length == 2) {
+                    fileSystem.makeDir(commands[1].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_UPLOAD_FILE:
+                if(commands.length == 2) {
+                    fileSystem.makeDir(commands[1].trim());
                     break;
                 }
                 throw new Exceptions.CmdFailure();
