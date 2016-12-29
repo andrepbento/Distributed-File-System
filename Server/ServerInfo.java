@@ -3,6 +3,7 @@ import java.io.Serializable;
 import java.net.InetAddress;
 
 public class ServerInfo implements Serializable {
+    
     static final long serialVersionUID = 1010L;
     
     private String name;
@@ -10,7 +11,6 @@ public class ServerInfo implements Serializable {
     private int datagramSocketPort;
     private int serverSocketPort;
     private boolean logged;
-    private boolean heartBeatState = false;
 
     public ServerInfo(String name, InetAddress ip, int datagramSocketPort
             , int serverSocketPort) {
@@ -72,13 +72,6 @@ public class ServerInfo implements Serializable {
 
     public synchronized void setLogged(boolean logged) {
         this.logged = logged;
-    }
-
-    public boolean isHeartBeatState() {
-        return heartBeatState;
-    }
-
-    public void setHeartBeatState(boolean heartBeatState) {
-        this.heartBeatState = heartBeatState;
-    }
+    }  
+    
 }
