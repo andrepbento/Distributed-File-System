@@ -34,7 +34,7 @@ public class ProcessClientRequest extends Thread {
     String directoryPath;
     private List<String> cmd;
     MSG msg, request;
-    ClientInfo requestClientInfo;
+    MSG requestClientInfo;
     ObjectInputStream inObj;
     ObjectOutputStream outObj;
     
@@ -56,9 +56,13 @@ public class ProcessClientRequest extends Thread {
             return;
         }
         
-        initiate();
+        try {
+            initiate();
+        } catch (IOException ex) {
+            Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
-                System.out.println("THREAD A PASSAR A INICIALIZAÇÃO.");
+        System.out.println("THREAD A PASSAR A INICIALIZAÇÃO.");
 
         
         System.out.println("TCP conection started [PORT: " + serverSocket.getLocalPort()+"]");
@@ -72,80 +76,89 @@ public class ProcessClientRequest extends Thread {
                 request = (MSG) (inObj.readObject());
                 
                 if (request == null) {
-                    
                     toClientSocket.close();
                     run = false;
-                    continue;
+                    break;
                 }
 
                 System.out.println("Recebido \"" + request.getCMD().toString()
                         + "\" de " + toClientSocket.getInetAddress().getHostAddress()
                         + ":" + toClientSocket.getLocalPort()); //trim apaga os espaços brancos
 
+                if (request.getCMDarg(0).toUpperCase() == "DISCONNECT") {
+                    sendMSG(new MSG(Constants.CODE_DISCONNECT_OK));
+                    toClientSocket.close();
+                    run = false;
+                    return;
+                }
+                
                 //TRATA DOS CLIENTES POSTERIORMENTE
                 if (request.getCMD().size() < 2) {
                     sendMSG(new MSG(Constants.CODE_CMD_NOT_RECOGNIZED));
                     return;
                 }
                 
-                switch (request.getCMDarg(0).toLowerCase()) {
-                    case "DOWNLOAD":    //ESTE PRIMEIRO PODE SER MUDADO
+                switch (request.getCMDarg(0).toUpperCase()) {
+                    case Constants.CMD_DOWNLOAD_FILE:    //ESTE PRIMEIRO PODE SER MUDADO
                         System.out.println("RECEBI UM DOWNLOAD COMO PRIMEIRO ARGUMENTO");
                         
                         localDirectory = new File(request.getCMDarg(1));
                         
                         if(directoryExists(localDirectory)){
-                            processFileRequest();
+                            processFileRequest(request.getCMDarg(1));
                         }
                         break;
-                    case "CD":
+                    case Constants.CMD_CD_DIR:
                         System.out.println("RECEBI UM CD COMO PRIMEIRO ARGUMENTO");
-                        if(request.getCMDarg(0).contains(requestClientInfo.getUsername())){
-                            localDirectory = new File(request.getCMDarg(1)+request.getCMDarg(2));
+                        if(request.getCMDarg(0).contains(requestClientInfo.getClientList().get(0).getUsername())){
+                            localDirectory = new File(request.getCMDarg(1));
                             if(directoryExists(localDirectory)){
                                 processCDRequest(localDirectory.getCanonicalPath());
                             }
                         }
                         break;
-                    case "MKDIR":
+                    case Constants.CMD_MK_DIR:
                         System.out.println("RECEBI UM MKDIR COMO PRIMEIRO ARGUMENTO");
                         
-                        localDirectory = new File(request.getCMDarg(1));
+                        localDirectory = new File(directoryPath+File.separator+request.getCMDarg(1));
                         
                         if(directoryExists(localDirectory)){
-                            File mkdirFile = new File(request.getCMDarg(1) + request.getCMDarg(2));
-                            processMKDIRequest(mkdirFile.getCanonicalPath());
+                            processMKDIRequest(directoryPath+File.separator+request.getCMDarg(1));
                         }
                         break;
-                    case "MV":
+                    case Constants.CMD_MOVE_FILE:
                         System.out.println("RECEBI UM MV COMO PRIMEIRO ARGUMENTO");
-                        
-                        localDirectory = new File(directoryPath);
-                        
-                        if(directoryExists(localDirectory)){
                                                                             //nome do ficheiro a move   //nome do destino
-                            processMoveRequest(directoryPath + File.separator + request.getCMDarg(1), request.getCMDarg(1));
-                        }
+                        processMoveRequest(directoryPath + File.separator + request.getCMDarg(1), request.getCMDarg(2));
+                        
                         break;
-                    case "UPLOAD":
+                    case Constants.CMD_COPY_FILE:
+                        System.out.println("RECEBI UM COPY COMO PRIMEIRO ARGUMENTO");
+                            localDirectory = new File(request.getCMDarg(2));
+                            if(directoryExists(localDirectory)){
+                                                                                //nome do ficheiro a move   //nome do destino
+                                processCopyRequest(request.getCMDarg(1), request.getCMDarg(2));
+                            }
+
+                        break;
+                    case Constants.CMD_UPLOAD_FILE:
                         //AINDA NÃO ESTÁ IMPLEMENTADO
                         break;
-                    case "RM":
-                        System.out.println("RECEBI UM MKDIR COMO PRIMEIRO ARGUMENTO");
+                    case Constants.CMD_RM_FILE:
+                        System.out.println("RECEBI UM RMDIR COMO PRIMEIRO ARGUMENTO");
                         
-                        localDirectory = new File(directoryPath);
-                        
+                        localDirectory = new File(directoryPath + File.separator + request.getCMDarg(1));
                         if(directoryExists(localDirectory)){                        //file name
                             processRMDIRequest(directoryPath + File.separator + request.getCMDarg(1));
                         }
                         break;
-                    case "LS":
+                    case Constants.CMD_LS_DIR:
                         System.out.println("RECEBI UM LS COMO PRIMEIRO ARGUMENTO");
                         
-                        localDirectory = new File(directoryPath);
+                        localDirectory = new File(directoryPath + File.separator + request.getCMDarg(1));
                         
                         if(directoryExists(localDirectory)){
-                            processLSRequest(directoryPath);
+                            processLSRequest(directoryPath + File.separator + request.getCMDarg(1));
                         }
                         break;
                     default:
@@ -155,11 +168,17 @@ public class ProcessClientRequest extends Thread {
                 ex.printStackTrace();
             } catch (IOException ex) {
                 Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex);
+                run = false;
+                try {
+                    toClientSocket.close();
+                } catch (IOException ex1) {
+                    Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex1);
+                }
             }
         }
     }
     
-    private boolean initiate() {
+    private boolean initiate() throws IOException {
        try{
             outObj = new ObjectOutputStream(toClientSocket.getOutputStream());
             
@@ -167,49 +186,53 @@ public class ProcessClientRequest extends Thread {
             
             inObj = new ObjectInputStream(toClientSocket.getInputStream());
             
-            requestClientInfo = (ClientInfo) (inObj.readObject());
-        
+            requestClientInfo = (MSG) (inObj.readObject());
+            
+
         if (requestClientInfo == null) {
             toClientSocket.close();
             System.out.println("OCURREU ALGO DE ERRADO NO CLIENT INFO");
             return false;
         }
         System.out.println("CRIEI UMA DIRECTORIA EM: " + directoryPath);
-        directoryPath = directoryPath + File.separator + requestClientInfo.getUsername();
+        directoryPath = directoryPath + File.separator + requestClientInfo.getClientList().get(0).getUsername();
         new File(directoryPath).mkdir();
                 
                 sendMSG(new MSG(Constants.CODE_CONNECT_OK, Arrays.asList(directoryPath)));
         
         }catch(IOException ex){
             System.out.println("NAO RECEBI CORRECTAMENTE OS COMANDOS CLIENTINFO");
+             toClientSocket.close();
             return false;
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex);
+             toClientSocket.close();
             System.out.println("NAO RECEBI CORRECTAMENTE OS COMANDOS CLIENTINFO");
             return false;
         }
        return true;
     }
-    
+    //VISTO
     public boolean directoryExists(File localDirectory){
         if(!localDirectory.exists()){
-            System.out.println("A directoria para a qual te estas a mover  [" + localDirectory + "] nao existe!");
+            System.out.println("The directory that you try to move  [" + localDirectory + "] doesnt exists!");
             return false;
         }
 
         if(!localDirectory.isDirectory()){
-            System.out.println("O caminho que indicaste [" + localDirectory + "] nao se refere a uma directoria!");
+            System.out.println("The path inserted [" + localDirectory + "] doesnt refer any directory!");
             return false;
         }
 
         if(!localDirectory.canRead()){
-            System.out.println("Sem permissoes de leitura na directoria " + localDirectory + "!");
+            System.out.println("Without permissions to read the directory " + localDirectory + "!");
             return false;
         }
         return true;
     }
      
-    public boolean processFileRequest()
+    //VISTO
+    public boolean processFileRequest(String filename)
     {        
         OutputStream out;    
         byte []fileChunck = new byte[1026];
@@ -221,21 +244,18 @@ public class ProcessClientRequest extends Thread {
             return false;
         }
 
-        System.out.println("Servidor de carregamento de ficheiros iniciado...");
+        System.out.println("Sending files...");
                 try{
-                    
-                    //System.out.println("Recebido pedido para: " + msg.getCMDarg(0));erro
 
-                    requestedCanonicalFilePath = new File(directoryPath+File.separator+msg.getCMDarg(0)).getCanonicalPath();
+                    requestedCanonicalFilePath = new File(directoryPath+File.separator+filename).getCanonicalPath();
 
                     if(!requestedCanonicalFilePath.startsWith(directoryPath+File.separator)){
-                        System.out.println("Nao e' permitido aceder ao ficheiro " + requestedCanonicalFilePath + "!");
-                        System.out.println("A directoria de base nao corresponde a " + directoryPath +"!");
+                        sendMSG(new MSG(Constants.CODE_SERVER_DOWNLOAD_ERROR,Arrays.asList("The base directory doenst correspond " + directoryPath +"!")));
                         return false;
                     }
                     
                     requestedFileInputStream = new FileInputStream(requestedCanonicalFilePath);
-                    System.out.println("Ficheiro " + requestedCanonicalFilePath + " aberto para leitura.");
+                    System.out.println("File " + requestedCanonicalFilePath + " open to read.");
                     
                     out = toClientSocket.getOutputStream();
                     
@@ -245,13 +265,14 @@ public class ProcessClientRequest extends Thread {
                         out.flush();
                                                 
                     }     
-                    System.out.println("Transferencia concluida");
+                    System.out.println("Transfer finished!");
                     
-                }catch(FileNotFoundException e){   //Subclasse de IOException                 
-                    System.out.println("Ocorreu a excepcao {" + e + "} ao tentar abrir o ficheiro " + requestedCanonicalFilePath + "!");                   
-                    return false;
+                }catch(FileNotFoundException e){   //Subclasse de IOException                              
+                    sendMSG(new MSG(Constants.CODE_SERVER_DOWNLOAD_ERROR,Arrays.asList("Ocurred an exeception {" + e + "} while trying to open the file " + requestedCanonicalFilePath + "!")));
+                        return false;
                 }catch(IOException e){
                     System.out.println("Ocorreu a excepcao de E/S: \n\t" + e); 
+                    sendMSG(new MSG(Constants.CODE_SERVER_DOWNLOAD_ERROR,Arrays.asList("Ocurred an exception of I/O: \n\t" + e)));
                     return false;
                 }
                 
@@ -263,137 +284,93 @@ public class ProcessClientRequest extends Thread {
         
         return true;
     }
-     
+    //VISTO 
     public boolean processCDRequest(String canonicalPath)
-    {        
-        Socket socketToClient;        
-        byte []fileChunck = new byte[1026];
-        int nbytes;
-        String requestedFileName, requestedCanonicalFilePath = null;
-        FileInputStream requestedFileInputStream = null;
-        
+    {          
         if(serverSocket == null){
             return false;
         }
 
-        System.out.println("MUDAR DE DIRECTORIA...");
+        System.out.println("CHANGING DIRECTORY...");
         
-        System.out.println("Recebido \"" + msg.getCMDarg(0) + "\"  " + 
-                msg.getCMDarg(1) + "\"  "+ msg.getCMDarg(2));
+        System.out.println("Received:  " + canonicalPath);
         
         //ACTUALIZA O PATH DESTA 
         directoryPath = canonicalPath;
 
 
         //Constroi a resposta terminando-a com uma mudanca de lina
-        //return sendMSG(new MSG(0,Arrays.asList(directoryPath)));erro
-        return true;
-            
+        return sendMSG(new MSG(Constants.CODE_SERVER_CD_OK,Arrays.asList("Changed directory to ... " + directoryPath)));
     }
-    
+    //VISTO
     public boolean processLSRequest(String canonicalPath)
-    {        
-        Socket socketToClient;        
-        byte []fileChunck = new byte[1026];
-        int nbytes;
-        String requestedFileName, requestedCanonicalFilePath = null;
-        FileInputStream requestedFileInputStream = null;
-        
+    {                
         if(serverSocket == null){
             return false;
         }
 
-        System.out.println("LISTAGEM DE DIRECTORIA...");
+        System.out.println("LS OF DIRECTORY...");
         
         System.out.println("Recebido \"" + msg.getCMDarg(0) + "\"  " + 
                 msg.getCMDarg(1) + "\"  "+ msg.getCMDarg(2));
         
         File file = new File(directoryPath);
-        listar(file);
+        String listagem = listar(file);
 
         //Constroi a resposta terminando-a com uma mudanca de lina
-        //return sendMSG(new MSG(0,Arrays.asList(canonicalPath)));erro
-        return true;
+        return sendMSG(new MSG(Constants.CODE_SERVER_LS_OK,Arrays.asList("LS OF DIRECTORY: " + listagem)));
+    
             
     }
       
+    //VISTO
     public boolean processMKDIRequest(String canonicalPath)
     {        
-        ObjectInputStream in;
-        ObjectOutputStream out;
-        Socket socketToClient;        
-        byte []fileChunck = new byte[1026];
-        int nbytes;
-        String requestedFileName, requestedCanonicalFilePath = null;
-        FileInputStream requestedFileInputStream = null;
-        
         if(serverSocket == null){
             return false;
         }
-
-        System.out.println("MUDAR DE DIRECTORIA...");
         
-        System.out.println("Recebido \"" + msg.getCMDarg(0) + "\"  " + 
-                 msg.getCMDarg(1) + "\"  "+ msg.getCMDarg(2));
+        System.out.println("CHANGING DIRECTORY...");
+        
+        System.out.println("RECEIVED: " + canonicalPath);
 
         new File(canonicalPath).mkdirs();
         
-        //Constroi a resposta terminando-a com uma mudanca de lina
-        //return sendMSG(new MSG(0,Arrays.asList("A directoria [" + canonicalPath + "] criada.")));erro
-        return true;
+        return sendMSG(new MSG(Constants.CODE_SERVER_MKDIR_OK,Arrays.asList("Directory [" + canonicalPath + "] created.")));
     }
-    
+    //VISTO
     public boolean processRMDIRequest(String canonicalPath)
     {        
-        ObjectInputStream in;
-        ObjectOutputStream out;
-        Socket socketToClient;        
-        byte []fileChunck = new byte[1026];
-        int nbytes;
         boolean delete = false;
-        String requestedFileName, requestedCanonicalFilePath = null;
-        FileInputStream requestedFileInputStream = null;
         
         if(serverSocket == null){
             return false;
         }
 
-        System.out.println("APAGAR DIRECTORIA...");
+        System.out.println("DELETING DIRECTORY ...");
         
-        System.out.println("Recebido \"" + msg.getCMDarg(0) + "\"  " + 
-                 msg.getCMDarg(1) + "\"  "+ msg.getCMDarg(2));
+        System.out.println("Received " +canonicalPath);
 
         File file = new File(canonicalPath);
         delete = file.delete();
         
         if(delete){
-            //return sendMSG(new MSG(0,Arrays.asList("Apaguei a  directoria [" + canonicalPath + "].")));erro
+            return sendMSG(new MSG(Constants.CODE_SERVER_RMDIR_OK,Arrays.asList("SUCSSEFULLY deleted the file [" + canonicalPath + "].")));
         }else{
-            //return sendMSG(new MSG(0,Arrays.asList("Não consegui apagar a directoria [" + canonicalPath + "]")));erro
+            return sendMSG(new MSG(Constants.CODE_SERVER_RMDIR_ERROR,Arrays.asList("Ocurred an error deleting the file [" + canonicalPath + "]")));
         }
-        //ESTE RETURN TRUE É SÓ PARA COMPILAR
-        return true;
     }
-    
+    //VISTO
     public boolean processRenameRequest(String filename, String newFileName)
-    {        
-        ObjectInputStream in;
-        ObjectOutputStream out;
-        Socket socketToClient;        
-        byte []fileChunck = new byte[1026];
-        int nbytes;
-        boolean delete = false;
-        String requestedFileName, requestedCanonicalFilePath = null;
-        FileInputStream requestedFileInputStream = null;
-        
+    {                
         if(serverSocket == null){
             return false;
         }
 
-        System.out.println("MUDAR O NOME DA DIRECTORIA...");
+        System.out.println("CHANGING THE NAME OF DIRECTORY/FILE...");
         
-        System.out.println("Recebido \"" + msg.getCMDarg(0) + "\"  " + 
-                 msg.getCMDarg(1) + "\"  "+ msg.getCMDarg(2));
+        System.out.println("Received: OldName: " + filename + "   NewName:  " + 
+                 newFileName);
         try{
         // File (or directory) with old name
         File oldFile = new File(directoryPath + File.separator + filename);
@@ -402,82 +379,71 @@ public class ProcessClientRequest extends Thread {
         File newFile = new File(directoryPath + File.separator + newFileName);
 
         if (newFile.exists())
-           throw new java.io.IOException("You already have this name assigned!");
-
+           throw new java.io.IOException("You already have this name assigned-> " + newFileName);
+        
         // Rename file (or directory)
         boolean success = oldFile.renameTo(newFile);
 
         if (!success) {
            throw new java.io.IOException("Ocurred an error renaming the File");
-           //return sendMSG(new MSG(0,Arrays.asList("Ocurred an error renaming the File :" + canonicalPath + "]")));erro
         }
         }catch(IOException ex){
             System.out.println(ex.toString());
-            //return sendMSG(new MSG(0,Arrays.asList("Successfuly renamed the File :" + canonicalPath + "].")));erro
+            return sendMSG(new MSG(Constants.CODE_SERVER_RENAME_ERROR,Arrays.asList(ex.toString())));
         }
         //ESTE RETURN TRUE É SÓ PARA COMPILAR
-        return true;
+        return sendMSG(new MSG(Constants.CODE_SERVER_RENAME_OK,Arrays.asList("SUCCESSFULLY RENAMED " + filename + "->" + newFileName)));
     }
-    
+    //VISTO
     public boolean processCopyRequest(String filename, String fileDestination)
     {        
-        ObjectInputStream in;
-        ObjectOutputStream out;
-        Socket socketToClient;        
-        byte []fileChunck = new byte[1026];
-        int nbytes;
-        boolean delete = false;
-        String requestedFileName, requestedCanonicalFilePath = null;
-        FileInputStream requestedFileInputStream = null;
         
         if(serverSocket == null){
             return false;
         }
 
-        System.out.println("COPIAR A DIRECTORIA...");
+        System.out.println("COPYING THE DIRECTORY/FILE...");
         
-        System.out.println("Recebido \"" + msg.getCMDarg(0) + "\"  " + 
-                 msg.getCMDarg(1) + "\"  "+ msg.getCMDarg(2));
+        System.out.println("Received filename: " + filename + 
+                "    with the destination folder " + fileDestination);
         try{
+            
         File file = new File(directoryPath+filename);
         
         Files.copy(file.toPath(),
         (new File(fileDestination + file.getName())).toPath(),
         StandardCopyOption.REPLACE_EXISTING);
-        //return sendMSG(new MSG(0,Arrays.asList("Successfuly copy the File [" + ficheiro.getName() + "] to destination [" + fileDestination + ficheiro.getName() + "")));erro
+        return sendMSG(new MSG(Constants.CODE_SERVER_COPY_OK,Arrays.asList("SUCCESSFULY COPIED THE FILE [" + filename + "] to destination [" + fileDestination + filename + "")));
         }catch(IOException ex){
             System.out.println(ex.toString());
-             // return sendMSG(new MSG(0,Arrays.asList("Ocurred an error copying the File :" + file.getName() + "]")));erro
+             return sendMSG(new MSG(Constants.CODE_SERVER_COPY_ERROR,Arrays.asList("OCURRED SOME ERROR IN COPY REQUEST :" + filename+ "]")));
         }
-        //ESTE RETURN TRUE É SÓ PARA COMPILAR
-        return true;
     }
-    
+    //VISTO
     public boolean processMoveRequest(String filename, String fileDestination)
     {                
         if(serverSocket == null){
             return false;
         }
 
-        System.out.println("MOVER A DIRECTORIA...");
+        System.out.println("MOVING THE DIRECTORY/FILE...");
         
-        System.out.println("Recebido \"" + msg.getCMDarg(0) + "\"  " + 
-                 msg.getCMDarg(1) + "\"  "+ msg.getCMDarg(2));
+        System.out.println("RECEIVED:  " + filename + " FileDestination:  " + fileDestination);
+        
         try{
-        File file = new File(directoryPath+filename);
+            
+        File file = new File(filename);
         
-        Files.move(file.toPath(),
-        (new File(fileDestination + file.getName())).toPath(),
+        Files.move(file.toPath(),(new File(fileDestination + file.getName())).toPath(),
         StandardCopyOption.ATOMIC_MOVE);
-        //return sendMSG(new MSG(0,Arrays.asList("Successfuly copy the File [" + ficheiro.getName() + "] to destination [" + fileDestination + ficheiro.getName() + "")));erro
+        return sendMSG(new MSG(Constants.CODE_SERVER_MOVE_OK,Arrays.asList("Successfuly moved the File [" 
+                + filename + "] to destination [" + fileDestination + "]")));
         }catch(IOException ex){
             System.out.println(ex.toString());
-             // return sendMSG(new MSG(0,Arrays.asList("Ocurred an error copying the File :" + file.getName() + "]")));erro
+            return sendMSG(new MSG(Constants.CODE_SERVER_MOVE_ERROR,Arrays.asList("Ocurred an error moving the File :" + filename + "]   ->   " + fileDestination)));
         }
-        //ESTE RETURN TRUE É SÓ PARA COMPILAR
-        return true;
     }
-    
+    //VISTO
     public boolean sendMSG(MSG msg)
     {
         try{
@@ -492,7 +458,9 @@ public class ProcessClientRequest extends Thread {
         return true;
     }
     
-    public void listar(File directory) {
+    //VISTO
+    public String listar(File directory) {
+        String list = "";
         if(directory.isDirectory()) {
             System.out.println(directory.getPath());
             String[] subDirectory = directory.list();
@@ -500,8 +468,10 @@ public class ProcessClientRequest extends Thread {
                 for(String dir : subDirectory){
                     //listar(new File(directory + File.separator  + dir));
                     System.out.println(directory + File.separator + dir);
+                    list += directory + File.separator+ dir + "\n";
                 }
             }
         }
+        return list;
     }
 }
