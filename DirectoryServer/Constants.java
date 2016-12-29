@@ -19,6 +19,9 @@ public final class Constants {
     public static final String CMD_LIST = "LIST";
     public static final String CMD_CHAT = "CHAT";
     
+    public static final String CONNECTED = "CONNECTED";
+    public static final String DISCONNECT = "DISCONNECT";
+    
     //Server CMD List
     public static final String REGISTADO = "REGISTADO";
     public static final String ERRO = "ERRO";

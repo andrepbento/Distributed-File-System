@@ -1,6 +1,8 @@
 
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServerInfo implements Serializable {
     static final long serialVersionUID = 1010L;
@@ -11,6 +13,8 @@ public class ServerInfo implements Serializable {
     private int serverSocketPort;
     private boolean logged;
     private boolean heartBeatState = false;
+    
+    private List<ClientInfo> connectedClients;
 
     public ServerInfo(String name, InetAddress ip, int datagramSocketPort
             , int serverSocketPort) {
@@ -19,6 +23,7 @@ public class ServerInfo implements Serializable {
         this.datagramSocketPort = datagramSocketPort;
         this.serverSocketPort = serverSocketPort;
         this.logged = true;
+        this.connectedClients = new ArrayList<>();
     }
     
     public ServerInfo(InetAddress ip, int port) {
@@ -80,5 +85,13 @@ public class ServerInfo implements Serializable {
 
     public void setHeartBeatState(boolean heartBeatState) {
         this.heartBeatState = heartBeatState;
+    }
+    
+    public void addConnectedClient(ClientInfo clientInfo) {
+        connectedClients.add(clientInfo);
+    }
+    
+    public void removeConnectedClient(ClientInfo clientInfo) {
+        connectedClients.remove(clientInfo);
     }
 }
