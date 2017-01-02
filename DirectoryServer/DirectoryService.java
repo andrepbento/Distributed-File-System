@@ -328,14 +328,14 @@ public class DirectoryService extends Thread {
                 } else {
                     if(receivedMSG.getCMDarg(2).equals("-all")){
                         if(clientsChat.sendChatMSGToAll(
-                                getClient(packet.getAddress(), packet.getPort()).getUsername(),
+                                getClient(packet.getAddress(), packet.getPort()),
                                 receivedMSG))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else
                             sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
                     } else {
                         if(clientsChat.sendChatMSGToDesignatedClients(
-                                getClient(packet.getAddress(), packet.getPort()).getUsername(), 
+                                getClient(packet.getAddress(), packet.getPort()), 
                                 receivedMSG))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else

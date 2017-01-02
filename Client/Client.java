@@ -43,6 +43,7 @@ public class Client {
         fileSystem = new DistributedFileSystem(this);
         username = null;
         currentConnection = null;
+        chatThread = new ChatThreadReceive();
     }
     
     public InetAddress getDirectoryServiceIp() { 
@@ -259,21 +260,15 @@ public class Client {
             case Constants.CODE_LOGOUT_OK:
                 if(heartBeatThread != null)
                     heartBeatThread.terminate();
-                if(chatThread != null){
-                    chatThread.terminate();
-                    chatThread = null;
-                }
+                chatThread.terminate();
                 System.out.println("You logged out"); 
                 break;
             case Constants.CODE_LOGIN_OK:
                 username = msg.getCMD().get(0);
                 heartBeatThread = new HeartbeatThreadSend(directoryServiceIp, 
-                        udpSocket.getLocalPort());
+                        udpSocket.getLocalPort(), chatThread.getDatagramSocketPort());
                 heartBeatThread.start();
-                if(chatThread == null){
-                    chatThread = new ChatThreadReceive();
-                    chatThread.start();
-                }
+                chatThread.start();
                 System.out.println("Logged in"); 
                 break;
             case Constants.CODE_REGISTER_OK:  System.out.println("You're now registered"); break;

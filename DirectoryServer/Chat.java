@@ -14,7 +14,6 @@ import java.util.Arrays;
  * @author andre
  */
 public class Chat {
-    
     private DatagramSocket socket;
     private DatagramPacket packet;
     
@@ -47,13 +46,13 @@ public class Chat {
         System.out.println("Reply MSG sended!");
     }
     
-    public boolean sendChatMSGToAll(String username, MSG msg) {
-        prepareChatMSG(username, msg);
+    public boolean sendChatMSGToAll(ClientInfo from, MSG msg) {
+        prepareChatMSG(from.getUsername(), msg);
         try {
             for(ClientInfo ci : DirectoryService.clientsList) {
-                if(/*!ci.getUsername().equals(username) &&*/ ci.isLogged()) {
+                if(!from.equals(ci) && ci.isLogged()) {
                     packet.setAddress(ci.getClientAddress());
-                    packet.setPort(Constants.REC_CHAT_PORT);
+                    packet.setPort(ci.getChatDatagramSocketPort());
                     socket.send(packet);
                 }
             }
@@ -63,14 +62,14 @@ public class Chat {
         return true;
     }
     
-    public boolean sendChatMSGToDesignatedClients(String username, MSG msg) {
-        prepareChatMSG(username, msg);
+    public boolean sendChatMSGToDesignatedClients(ClientInfo from, MSG msg) {
+        prepareChatMSG(from.getUsername(), msg);
         String[] clientsUsernames = msg.getCMDarg(2).split(",");
         for(int i = 0; i < clientsUsernames.length; i++) {
             for(ClientInfo ci : DirectoryService.clientsList) {
-                if(ci.isLogged() && ci.getUsername().equals(clientsUsernames[i])){
+                if(!from.equals(ci) && ci.isLogged() && ci.getUsername().equals(clientsUsernames[i])){
                     packet.setAddress(ci.getClientAddress());
-                    packet.setPort(Constants.REC_CHAT_PORT);
+                    packet.setPort(ci.getChatDatagramSocketPort());
                     try {
                         socket.send(packet);
                     } catch (SocketException ex) {
