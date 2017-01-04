@@ -13,6 +13,8 @@ public final class Constants {
     public static final String CMD_LOGIN = "LOGIN";
     public static final String CMD_LOGOUT = "LOGOUT";
     public static final String CMD_LIST = "LIST";
+    public static final String CMD_LIST_C = "LIST -C";
+    public static final String CMD_LIST_S = "LIST -S";
     
     public static final String CMD_CONNECT = "CONNECT";
     public static final String CMD_DISCONNECT = "DISCONNECT";

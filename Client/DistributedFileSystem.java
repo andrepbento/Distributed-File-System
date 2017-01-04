@@ -28,6 +28,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         this.client = client;
         try {
             localDirectory = new File(".").getCanonicalPath();
+            System.out.println("Folder created:" + localDirectory);
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -98,16 +99,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             client.processDirectoryServiceCommand();
         }
     }
-    
-    @Override
-    public void list(String type) {
-        if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
-            client.sendRequestUdp("LIST"+" "+type);
-            client.receiveResponseUdp();
-            client.processDirectoryServiceCommand();
-        }
-    }
-    
+        
     @Override
     public void connect(String serverName) {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){ //AQUI, MÃO SE PODE CONNECTAR QUANDO ESTÁ EM LOCAL?
@@ -117,7 +109,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                         client.getServerConnection(serverName).createSocket();
                         client.receiveResponseTcp(serverName);  
                         MSG msg = new MSG();
-                        list("-c");
+                        list(Constants.CMD_LIST_C);
                         if(client.getMyClientInfo() != null){
                             msg.setClientList(Arrays.asList(client.getMyClientInfo()));
                             client.sendRequestUdp(Constants.CMD_CONNECT + " " + 
@@ -146,6 +138,15 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
             MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DISCONNECT));
             client.sendRequestTcp(msg);
+        }
+    }
+
+    @Override
+    public void list(String type) {
+        if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
+            client.sendRequestUdp(Constants.CMD_LIST + " " + type);
+            client.receiveResponseUdp();
+            client.processDirectoryServiceCommand();
         }
     }
     
@@ -222,21 +223,26 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void getWorkingDirContent() {
         try{
-            if(fileSystem==FS_SERVER){
+            if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_LS_DIR));
                     client.sendRequestTcp(msg);
                     client.processServerCommand();
-            }else if(fileSystem==FS_LOCAL){
+            }else if(fileSystem == FS_LOCAL){
                 File folder = new File(localDirectory);
+                if(!folder.exists())
+                    throw new Exceptions.DirectoryDoesntExist();
+                
                 File[] listOfFiles = folder.listFiles();
 
+                if(listOfFiles.length == 0)
+                    System.out.println("No files or directories...");
+                
                 for (int i = 0; i < listOfFiles.length; i++) {
                     if (listOfFiles[i].isFile())
                         System.out.println("f: " + listOfFiles[i].getName());
                     else if (listOfFiles[i].isDirectory())
                         System.out.println("d: " + listOfFiles[i].getName());
                 }
-                //throw new Exceptions.;
             }
         } catch(Exception ex) {
             System.out.println(ex);
@@ -276,11 +282,11 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                         client.sendRequestTcp(msg);
                         client.processServerCommand();
             }else if(fileSystem==FS_LOCAL){
-                File file = new File(localDirectory+"\\"+fileName);
+                File file = new File(localDirectory + File.separator + fileName);
                 if(file.delete())
                     System.out.println("\nFile "+fileName+" successfully deleted");
                 else
-                    System.out.println("\nFile "+fileName+" not deleted");
+                    throw new Exceptions.ErrorRemovingFile();
             }
         } catch(Exception ex) {
             System.out.println(ex);
@@ -290,27 +296,21 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void makeDir(String directoryName) {
         try{
-            if(fileSystem==FS_SERVER){
+            if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_MK_DIR, directoryName));
                             client.sendRequestTcp(msg);
                             client.processServerCommand();
-            }else if(fileSystem==FS_LOCAL){
-                File theDir = new File(directoryName);
-                if (!theDir.exists()){
+            }else if(fileSystem == FS_LOCAL){
+                File theDir = new File(localDirectory + File.separator + directoryName);
+                if (theDir.exists()){
                     System.out.println("creating directory: " + directoryName);
-                    boolean result = false;
-
-                    try{
-                        theDir.mkdir();
-                        result = true;
-                    }catch(SecurityException se){
-                        se.printStackTrace();
-                    }
-                    if(result){    
-                        System.out.println("DIR created");  
+                    if(theDir.mkdir()){    
+                        System.out.println("DIR " + directoryName + " created");  
                     }else{
-
+                         throw new Exceptions.ErrorCreatingDirectory();
                     }
+                }else{
+                    throw new Exceptions.ErrorCreatingDirectory();
                 }
             }
         } catch(Exception ex) {

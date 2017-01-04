@@ -78,7 +78,8 @@ public class HeartbeatThreadReceive extends Thread {
                 } else if(receivedMSG.getCMDarg(0).equals(Constants.HEARTBEAT_CLIENT)) {
                     System.out.println(Constants.HEARTBEAT_CLIENT+" received!");
                     setClientHeartBeatStateOn(new ClientInfo(packet.getAddress(),
-                            packet.getPort()), Integer.parseInt(receivedMSG.getCMDarg(1)));
+                            Integer.parseInt(receivedMSG.getCMDarg(1))), 
+                            Integer.parseInt(receivedMSG.getCMDarg(2)));
                 } else
                     System.out.println("Hearth-Beat received NOT RECOGNIZED!");
                     // PODE SER UMA LIGACAO CONHECIDA... PENSAR EM TENTAR RE-ESTABLECER LIGACAO
@@ -100,7 +101,6 @@ public class HeartbeatThreadReceive extends Thread {
                         ServerInfo si = it.next();
                         if(!si.isHeartBeatState()) {
                             si.setLogged(false);
-                            //it.remove();
                         } else
                             si.setHeartBeatState(false);
                     }
@@ -124,7 +124,6 @@ public class HeartbeatThreadReceive extends Thread {
                         ClientInfo ci = it.next();
                         if(!ci.isHeartBeatState()) {
                             ci.logOut();
-                            //it.remove();
                         } else
                             ci.setHeartBeatState(false);
                     }
