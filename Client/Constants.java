@@ -28,6 +28,7 @@ public final class Constants {
     public static final String CMD_MK_DIR = "MKDIR";
     public static final String CMD_DOWNLOAD_FILE = "DOWNLOAD";
     public static final String CMD_UPLOAD_FILE = "UPLOAD";
+    public static final String CMD_RENAME = "RENAME";
     
     public static final String DS = "DS";
     public static final String LOCAL = "LOCAL";

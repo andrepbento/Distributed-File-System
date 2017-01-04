@@ -119,9 +119,33 @@ public class Exceptions{
         }
     }
     
+    static class ErrorRenamingFile extends Exception{
+        public ErrorRenamingFile(){ 
+            super("Couldn't rename the file"); 
+        }
+    }
+    
     static class DirectoryDoesntExist extends Exception{
         public DirectoryDoesntExist(){ 
             super("The directory you're trying to use doesn't exist"); 
+        }
+    }
+     
+    static class FileDoesntExist extends Exception{
+        public FileDoesntExist(){ 
+            super("The file you're trying to use doesn't exist"); 
+        }
+    }
+
+    static class NotADirectory extends Exception{
+        public NotADirectory(){ 
+            super("Not a directory"); 
+        }
+    }
+    
+    static class NotAfile extends Exception{
+        public NotAfile(){ 
+            super("Not a file"); 
         }
     }
 }

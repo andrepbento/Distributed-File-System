@@ -8,6 +8,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import java.util.Arrays;
 
 /**
@@ -151,22 +154,30 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     }
     
     @Override
-    public void copyFile(String fileName, String destinationPath) {
+    public void copyFile(String fileName, String destination) {
         try {
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_COPY_FILE, 
-                        fileName, destinationPath));
+                        fileName, destination));
                 client.sendRequestTcp(msg);
                 client.processServerCommand();
             }else if(fileSystem == FS_LOCAL){
-                InputStream input = new FileInputStream(localDirectory+"\\"+fileName);
-                OutputStream output = new FileOutputStream(destinationPath);
-                byte[] buf = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = input.read(buf)) > 0)
-                    output.write(buf, 0, bytesRead);
-                input.close();
-                output.close();
+                File origin = new File(localDirectory + File.separator + fileName);
+                File dest = new File(localDirectory + File.separator + destination);
+                
+                if(!origin.exists())
+                    throw new Exceptions.FileDoesntExist();
+                
+                if(!dest.exists())
+                    throw  new Exceptions.DirectoryDoesntExist();
+                
+                if(!dest.isDirectory())
+                    throw new Exceptions.NotADirectory();
+                                                    
+                File file = new File(localDirectory + File.separator + fileName);
+                new File(localDirectory + File.separator + destination + File.separator + fileName).mkdirs();
+                File fileDest = new File(localDirectory + File.separator + destination + File.separator + fileName);
+                FileUtils.copyDirectory(file, fileDest);
             }
         } catch(Exception ex) {
              System.out.println(ex);
@@ -174,16 +185,31 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     }
 
     @Override
-    public void moveFile(String fileName, String destinationPath) {
+    public void moveFile(String fileName, String destination) {
         try{
-            if(fileSystem==FS_SERVER){
+            if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_MOVE_FILE, 
-                            fileName, destinationPath));
-                    client.sendRequestTcp(msg);
-                    client.processServerCommand();
-            }else if(fileSystem==FS_LOCAL){
-                copyFile(fileName, destinationPath);
-                new File(localDirectory+"\\"+fileName).delete();
+                            fileName, destination));
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
+            }else if(fileSystem == FS_LOCAL){
+                File origin = new File(localDirectory + File.separator + fileName);
+                File dest = new File(localDirectory + File.separator + destination);
+                
+                if(!origin.exists())
+                    throw new Exceptions.FileDoesntExist();
+                
+                if(!dest.exists())
+                    throw  new Exceptions.DirectoryDoesntExist();
+                
+                if(!dest.isDirectory())
+                    throw new Exceptions.NotADirectory();
+                
+                File fileOrigin = new File(fileName);
+                File fileDest = new File(destination);
+                Path source = fileOrigin.toPath();
+                Path newdir = fileDest.toPath();
+                Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
             }
         } catch(Exception ex) {
             System.out.println(ex);
@@ -225,8 +251,8 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         try{
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_LS_DIR));
-                    client.sendRequestTcp(msg);
-                    client.processServerCommand();
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
             }else if(fileSystem == FS_LOCAL){
                 File folder = new File(localDirectory);
                 if(!folder.exists())
@@ -254,8 +280,8 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         try{
             if(fileSystem==FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_CAT_FILE, fileName));
-                    client.sendRequestTcp(msg);
-                    client.processServerCommand();
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
             }else if(fileSystem==FS_LOCAL){
                 try{
                     BufferedReader in = new BufferedReader(
@@ -273,15 +299,41 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             System.out.println(ex);
         }
     }
+    
+    @Override
+    public void renameFile(String oldName, String newName) {
+        try{
+            if(fileSystem == FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_RENAME, 
+                            oldName, newName));
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
+            }else if(fileSystem==FS_LOCAL){
+                File oldFile = new File(localDirectory + File.separator + oldName);
+                File newFile = new File(localDirectory + File.separator + newName);
+
+                if (!oldFile.exists())
+                   throw new Exceptions.FileDoesntExist();
+
+                if (!oldFile.renameTo(newFile)) {
+                    throw new Exceptions.ErrorRenamingFile();
+                }
+                
+                System.out.println("File renamed to: " + newName);
+            }
+        } catch(Exception ex) {
+            System.out.println(ex);
+        }
+    }
 
     @Override
     public void removeFile(String fileName) {
         try{
-            if(fileSystem==FS_SERVER){
+            if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_RM_FILE, fileName));
-                        client.sendRequestTcp(msg);
-                        client.processServerCommand();
-            }else if(fileSystem==FS_LOCAL){
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
+            }else if(fileSystem == FS_LOCAL){
                 File file = new File(localDirectory + File.separator + fileName);
                 if(file.delete())
                     System.out.println("\nFile "+fileName+" successfully deleted");
@@ -298,8 +350,8 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         try{
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_MK_DIR, directoryName));
-                            client.sendRequestTcp(msg);
-                            client.processServerCommand();
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
             }else if(fileSystem == FS_LOCAL){
                 File theDir = new File(localDirectory + File.separator + directoryName);
                 if (theDir.exists()){
@@ -321,10 +373,10 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void downloadFile(String fileName) {
         try {
-            if(fileSystem==FS_SERVER){
+            if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DOWNLOAD_FILE, fileName));
-                            client.sendRequestTcp(msg);
-                            client.processServerCommand();
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
             }
         } catch(Exception ex) {
             System.out.println(ex);
@@ -334,12 +386,10 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void uploadFile(String fileName) {
         try{
-            if(fileSystem==FS_LOCAL){
-                if(fileSystem==FS_SERVER){
-                    MSG msg = new MSG(0, Arrays.asList(Constants.CMD_UPLOAD_FILE, fileName));
-                                client.sendRequestTcp(msg);
-                                client.processServerCommand();
-                }
+            if(fileSystem == FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_UPLOAD_FILE, fileName));
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
             }
         } catch(Exception ex) {
             System.out.println(ex);
