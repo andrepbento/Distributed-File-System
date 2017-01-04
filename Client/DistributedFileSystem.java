@@ -19,7 +19,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     public static final int FS_SERVER = 1;
     public static final int FS_LOCAL = 2;
     
-    private int fileSystem; // 0(DS), 1(Server), 2(local) ??????????????????????? TALVEZ SEJA MELHOR ASSIM TRUE|FALSE NAO CHEGA
+    private int fileSystem; // 0(DS), 1(Server), 2(local)
     private String localDirectory;
     private Client client;
     
@@ -98,7 +98,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             client.processDirectoryServiceCommand();
         }
     }
-    
+        
     @Override
     public void connect(String serverName) {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){ //AQUI, MÃO SE PODE CONNECTAR QUANDO ESTÁ EM LOCAL?
@@ -174,129 +174,175 @@ public class DistributedFileSystem implements ClientMethodsInterface {
 
     @Override
     public void moveFile(String fileName, String destinationPath) {
-        if(fileSystem==FS_SERVER){
-            //sendRequestTCP(CP+" "+fileName+" "+destinationPath) //**************
-        }else if(fileSystem==FS_LOCAL){
-            copyFile(fileName, destinationPath);
-            new File(localDirectory+"\\"+fileName).delete();
+        try{
+            if(fileSystem==FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_MOVE_FILE, 
+                            fileName, destinationPath));
+                    client.sendRequestTcp(msg);
+                    client.processServerCommand();
+            }else if(fileSystem==FS_LOCAL){
+                copyFile(fileName, destinationPath);
+                new File(localDirectory+"\\"+fileName).delete();
+            }
+        } catch(Exception ex) {
+            System.out.println(ex);
         }
     }
 
+    // cd ..  || cd download || cd c:\download\java
     @Override
     public void changeWorkingDirectory(String newWorkingDirectoryPath) {
-        if(fileSystem == FS_SERVER){
-            //sendRequestTCP(CD+" "+newWorkingDirectoryPath) //**************
-        }else if(fileSystem == FS_LOCAL){
-            if(newWorkingDirectoryPath.split("\\").length == 1){
-                if(newWorkingDirectoryPath.equals("..")){
-                    
-                    //File folder = new File(newWorkingDirectoryPath);
+        try{
+            if(fileSystem == FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_CD_DIR, 
+                    newWorkingDirectoryPath));
+                client.sendRequestTcp(msg);
+                client.processServerCommand();
+            }else if(fileSystem==FS_LOCAL){
+                if(newWorkingDirectoryPath.split("\\").length == 1){
+                    if(newWorkingDirectoryPath.equals("..")){
+                        System.out.println("IMPLEMENTAR CASO: cd ..");
+                    }else{
+                        System.out.println("IMPLEMENTAR CASO: cd directoriaXPTO");
+                    }
                 }else{
-                    
-                }
-                //..
-                //(ou)
-                //pasta especifica na directoria corrente
-            }else{
-                //caminho completo
-                try{
-                    File folder = new File(newWorkingDirectoryPath);
-                    localDirectory = folder.getCanonicalPath();
-                } catch(IOException ex) {
-                    ex.printStackTrace();
+                    try{
+                        File folder = new File(newWorkingDirectoryPath);
+                        localDirectory = folder.getCanonicalPath();
+                    } catch(IOException ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }
+        } catch(Exception ex) {
+            System.out.println(ex);
         }
     }
 
     @Override
     public void getWorkingDirContent() {
-            //throws Exceptions.CmdFailure {
-        if(fileSystem==FS_SERVER){
-            //sendRequestTCP(LS)
-            // PEDIR "ls" AO SERVIDOR EM QUESTAO
-        }else if(fileSystem==FS_LOCAL){
-            File folder = new File(localDirectory);
-            File[] listOfFiles = folder.listFiles();
+        try{
+            if(fileSystem==FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_LS_DIR));
+                    client.sendRequestTcp(msg);
+                    client.processServerCommand();
+            }else if(fileSystem==FS_LOCAL){
+                File folder = new File(localDirectory);
+                File[] listOfFiles = folder.listFiles();
 
-            for (int i = 0; i < listOfFiles.length; i++) {
-                if (listOfFiles[i].isFile())
-                    System.out.println("f: " + listOfFiles[i].getName());
-                else if (listOfFiles[i].isDirectory())
-                    System.out.println("d: " + listOfFiles[i].getName());
+                for (int i = 0; i < listOfFiles.length; i++) {
+                    if (listOfFiles[i].isFile())
+                        System.out.println("f: " + listOfFiles[i].getName());
+                    else if (listOfFiles[i].isDirectory())
+                        System.out.println("d: " + listOfFiles[i].getName());
+                }
+                //throw new Exceptions.;
             }
-            //throw new Exceptions.;
+        } catch(Exception ex) {
+            System.out.println(ex);
         }
     }
 
     @Override
     public void getFileContent(String fileName) {
-        if(fileSystem==FS_SERVER){
-            //sendRequestTCP(CAT) //**********************************************
-        }else if(fileSystem==FS_LOCAL){
-            try{
-                BufferedReader in = new BufferedReader(
-                        new FileReader(localDirectory+"\\"+fileName));
-                System.out.println("\nFile content:");
-                String line;
-                while((line = in.readLine()) != null)
-                    System.out.println(line);
-                in.close();
-            }catch(Exception ex){
-                ex.printStackTrace();
+        try{
+            if(fileSystem==FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_CAT_FILE, fileName));
+                    client.sendRequestTcp(msg);
+                    client.processServerCommand();
+            }else if(fileSystem==FS_LOCAL){
+                try{
+                    BufferedReader in = new BufferedReader(
+                            new FileReader(localDirectory+"\\"+fileName));
+                    System.out.println("\nFile content:");
+                    String line;
+                    while((line = in.readLine()) != null)
+                        System.out.println(line);
+                    in.close();
+                }catch(Exception ex){
+                    ex.printStackTrace();
+                }
             }
+        } catch(Exception ex) {
+            System.out.println(ex);
         }
     }
 
     @Override
     public void removeFile(String fileName) {
-        if(fileSystem==FS_SERVER){
-            //sendRequestTCP(RM+" "+fileName) //**********************************
-        }else if(fileSystem==FS_LOCAL){
-            File file = new File(localDirectory+"\\"+fileName);
-            if(file.delete())
-                System.out.println("\nFile "+fileName+" successfully deleted");
-            else
-                System.out.println("\nFile "+fileName+" not deleted");
+        try{
+            if(fileSystem==FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_RM_FILE, fileName));
+                        client.sendRequestTcp(msg);
+                        client.processServerCommand();
+            }else if(fileSystem==FS_LOCAL){
+                File file = new File(localDirectory+"\\"+fileName);
+                if(file.delete())
+                    System.out.println("\nFile "+fileName+" successfully deleted");
+                else
+                    System.out.println("\nFile "+fileName+" not deleted");
+            }
+        } catch(Exception ex) {
+            System.out.println(ex);
         }
     }
 
     @Override
     public void makeDir(String directoryName) {
-        if(fileSystem==FS_SERVER){
-            
-        }else if(fileSystem==FS_LOCAL){
-            File theDir = new File(directoryName);
-            if (!theDir.exists()){
-                System.out.println("creating directory: " + directoryName);
-                boolean result = false;
+        try{
+            if(fileSystem==FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_MK_DIR, directoryName));
+                            client.sendRequestTcp(msg);
+                            client.processServerCommand();
+            }else if(fileSystem==FS_LOCAL){
+                File theDir = new File(directoryName);
+                if (!theDir.exists()){
+                    System.out.println("creating directory: " + directoryName);
+                    boolean result = false;
 
-                try{
-                    theDir.mkdir();
-                    result = true;
-                }catch(SecurityException se){
-                    se.printStackTrace();
-                }
-                if(result){    
-                    System.out.println("DIR created");  
-                }else{
-                    
+                    try{
+                        theDir.mkdir();
+                        result = true;
+                    }catch(SecurityException se){
+                        se.printStackTrace();
+                    }
+                    if(result){    
+                        System.out.println("DIR created");  
+                    }else{
+
+                    }
                 }
             }
+        } catch(Exception ex) {
+            System.out.println(ex);
         }
     }
     
     @Override
     public void downloadFile(String fileName) {
-        if(fileSystem==FS_SERVER){
-            //FAZER DOWNLOAD DO FICHEIRO PARA localDirectory
+        try {
+            if(fileSystem==FS_SERVER){
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DOWNLOAD_FILE, fileName));
+                            client.sendRequestTcp(msg);
+                            client.processServerCommand();
+            }
+        } catch(Exception ex) {
+            System.out.println(ex);
         }
     }
     
     @Override
     public void uploadFile(String fileName) {
-        if(fileSystem==FS_LOCAL){
-            //FAZER UPLOAD DO FICHEIRO PARA remoteDirectory
+        try{
+            if(fileSystem==FS_LOCAL){
+                if(fileSystem==FS_SERVER){
+                    MSG msg = new MSG(0, Arrays.asList(Constants.CMD_UPLOAD_FILE, fileName));
+                                client.sendRequestTcp(msg);
+                                client.processServerCommand();
+                }
+            }
+        } catch(Exception ex) {
+            System.out.println(ex);
         }
     }
 }

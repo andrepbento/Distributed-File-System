@@ -19,6 +19,9 @@ public final class Constants {
     public static final String CMD_LIST = "LIST";
     public static final String CMD_CHAT = "CHAT";
     
+    public static final String CONNECTED = "CONNECTED";
+    public static final String DISCONNECT = "DISCONNECT";
+    
     //Server CMD List
     public static final String REGISTADO = "REGISTADO";
     public static final String ERRO = "ERRO";
@@ -59,7 +62,4 @@ public final class Constants {
     public static final int HB_LISTENING_PORT = 9801;
     public static final String HEARTBEAT_CLIENT = "HEARTBEAT_CLIENT";
     public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
-    
-    //Chat
-    public static final int REC_CHAT_PORT = 9802;
 }
