@@ -187,7 +187,7 @@ public class Client {
         System.out.print(list);
     } 
     
-    private void updateServerList(List<ServerInfo> list){
+    public void updateServerList(List<ServerInfo> list){
         for (ServerInfo item : list) {
             if(!serverList.containsKey(item.getName())){
                 serverList.put(item.getName(), new ServerConnection(item, null));
@@ -232,7 +232,7 @@ public class Client {
         for (ClientInfo c : clientList) {
 //            if(c.equals(new ClientInfo(InetAddress.getByName(InetAddress.getLocalHost().getHostAddress())
 //                    , udpSocket.getLocalPort())))
-            if(c.equals(new ClientInfo(InetAddress.getByName("192.168.1.35")
+            if(c.equals(new ClientInfo(InetAddress.getByName("127.0.0.1")
                     , udpSocket.getLocalPort())))
                     return c;
         }

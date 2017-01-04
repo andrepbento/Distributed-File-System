@@ -32,6 +32,8 @@ public class DirectoryService extends Thread {
     
     private Chat clientsChat;
     
+    private Registry r;
+    
     public DirectoryService() throws SocketException{
         socket = null;
         packet = null;
@@ -50,7 +52,10 @@ public class DirectoryService extends Thread {
         
         new HeartbeatThreadReceive().start();
         
-        // launchRemoteService();
+        if((r = launchRemoteService()) == null) {
+            System.out.println("Launch remote service failure!");
+            return;
+        }
         
         printClientsList();
         printServersList();
@@ -484,48 +489,47 @@ public class DirectoryService extends Thread {
         return true;
     }
     
-//    // JAVA RMI
-//    /*
-//    Registry launchRemoteService() {
-//        try {
-//            Registry r;
-//
-//            try{
-//                r = LocateRegistry.createRegistry(1099); //Se o servico nao estiver lancado ainda
-//            }catch(RemoteException e){
-//                System.out.println("Excepcao: " + e);
-//                r = LocateRegistry.getRegistry(1099); //caso esteja, faz get do servico existente
-//            }
-//
-//            /*
-//             * Cria o servico
-//             */
-//    /*
-//            GetRemoteServerListService timeService = new GetRemoteServerListService(localDirectory);
-//
-//            System.out.println("Servico GetRemoteFile criado e em execucao ("+timeService.getRef().remoteToString()+"...");
-//
-//            /*
-//             * Regista o servico no rmiregistry local para que os clientes possam localiza'-lo, ou seja,
-//             * obter a sua referencia remota (endereco IP, porto de escuta, etc.).
-//             */
-//    
-//            r.bind(SERVICE_NAME, timeService);
-//
-//            System.out.println("Servico " + SERVICE_NAME + " registado no registry...");
-//            
-//            return r;
-//        }catch(RemoteException e){
-//            System.out.println("Erro remoto - " + e);
-//            System.exit(1);
-//        }catch(Exception e){
-//            System.out.println("Erro - " + e);
-//            System.exit(1);
-//        }
-//        
-//        return null;
-//    }
+    // JAVA RMI
     
+    Registry launchRemoteService() {
+        try {
+            Registry r;
+
+            try{
+                r = LocateRegistry.createRegistry(1099); //Se o servico nao estiver lancado ainda
+            }catch(RemoteException e){
+                System.out.println("Excepcao: " + e);
+                r = LocateRegistry.getRegistry(1099); //caso esteja, faz get do servico existente
+            }
+
+            /*
+             * Cria o servico
+             */
+            GetRemoteServerListService listService = new GetRemoteServerListService(serversList);
+
+            System.out.println("Servico GetRemoteFile criado e em execucao ("+listService.getRef().remoteToString()+"...");
+
+            /*
+             * Regista o servico no rmiregistry local para que os clientes possam localiza'-lo, ou seja,
+             * obter a sua referencia remota (endereco IP, porto de escuta, etc.).
+             */
+
+            r.bind(Constants.SERVICE_SERVER_LIST, listService);
+
+            System.out.println("Servico "+Constants.SERVICE_SERVER_LIST
+                    +" registado no registry...");
+            
+            return r;
+        }catch(RemoteException e){
+            System.out.println("Erro remoto - " + e);
+            System.exit(1);
+        }catch(Exception e){
+            System.out.println("Erro - " + e);
+            System.exit(1);
+        }
+        
+        return null;
+    }
     
     /*
     private void detectServerExit() {
