@@ -108,7 +108,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                         client.getServerConnection(serverName).createSocket();
                         client.receiveResponseTcp(serverName);  
                         MSG msg = new MSG();
-                        list("-c");
+                        list(Constants.CMD_LIST_C);
                         if(client.getMyClientInfo() != null){
                             msg.setClientList(Arrays.asList(client.getMyClientInfo()));
                             client.sendRequestUdp(Constants.CMD_CONNECT + " " + 
@@ -143,7 +143,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void list(String type) {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
-            client.sendRequestUdp("LIST"+" "+type);
+            client.sendRequestUdp(Constants.CMD_LIST + " " + type);
             client.receiveResponseUdp();
             client.processDirectoryServiceCommand();
         }
