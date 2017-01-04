@@ -43,6 +43,7 @@ public class Client {
         fileSystem = new DistributedFileSystem(this);
         username = null;
         currentConnection = null;
+        heartBeatThread = null;
         chatThread = new ChatThreadReceive();
     }
     
@@ -258,16 +259,21 @@ public class Client {
         
         switch(msg.getMSGCode()){
             case Constants.CODE_LOGOUT_OK:
-                if(heartBeatThread != null)
+                username = null;
+                if(heartBeatThread != null) {
                     heartBeatThread.terminate();
+                    heartBeatThread = null;
+                }
                 chatThread.terminate();
                 System.out.println("You logged out"); 
                 break;
             case Constants.CODE_LOGIN_OK:
                 username = msg.getCMD().get(0);
-                heartBeatThread = new HeartbeatThreadSend(directoryServiceIp, 
-                        udpSocket.getLocalPort(), chatThread.getDatagramSocketPort());
-                heartBeatThread.start();
+                if(heartBeatThread == null) {
+                    heartBeatThread = new HeartbeatThreadSend(directoryServiceIp, 
+                            udpSocket.getLocalPort(), chatThread.getDatagramSocketPort());
+                    heartBeatThread.start();
+                }
                 chatThread.start();
                 System.out.println("Logged in"); 
                 break;
