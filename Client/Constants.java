@@ -13,8 +13,8 @@ public final class Constants {
     public static final String CMD_LOGIN = "LOGIN";
     public static final String CMD_LOGOUT = "LOGOUT";
     public static final String CMD_LIST = "LIST";
-    public static final String CMD_LIST_C = "LIST -C";
-    public static final String CMD_LIST_S = "LIST -S";
+    public static final String CMD_LIST_C = "-C";
+    public static final String CMD_LIST_S = "-S";
     
     public static final String CMD_CONNECT = "CONNECT";
     public static final String CMD_DISCONNECT = "DISCONNECT";
@@ -107,6 +107,6 @@ public final class Constants {
     public static final String HEARTBEAT_CLIENT = "HEARTBEAT_CLIENT";
     public static final int SENDING_PORT_HB = 9801;
     
-    //ChatThreadSend
-    public static final int REC_CHAT_PORT = 9802;
+    //JAVA RMI
+    public static final String SERVICE_SERVER_LIST = "GetRemoteServerList";
 }

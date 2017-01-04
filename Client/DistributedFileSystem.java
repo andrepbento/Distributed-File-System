@@ -8,7 +8,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -144,9 +151,27 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void list(String type) {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
-            client.sendRequestUdp(Constants.CMD_LIST + " " + type);
-            client.receiveResponseUdp();
-            client.processDirectoryServiceCommand();
+            /*
+            if(type.equals(Constants.CMD_LIST_S)){
+                try {
+                    String objectUrl = client.getDirectoryServiceIp().getHostAddress();
+                    String registration = "rmi://"+objectUrl+"/"+Constants.SERVICE_SERVER_LIST;
+                    Remote remote = Naming.lookup(registration);
+                    GetRemoteServerListInterface fileService = (GetRemoteServerListInterface) remote;
+                    
+                    client.updateServerList(fileService.getServerList());
+                } catch (NotBoundException ex) {
+                    ex.printStackTrace();
+                } catch (MalformedURLException ex) {
+                    ex.printStackTrace();
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
+                }
+            } else {*/
+                client.sendRequestUdp(Constants.CMD_LIST + " " + type);
+                client.receiveResponseUdp();
+                client.processDirectoryServiceCommand();
+            //}
         }
     }
     

@@ -62,4 +62,7 @@ public final class Constants {
     public static final int HB_LISTENING_PORT = 9801;
     public static final String HEARTBEAT_CLIENT = "HEARTBEAT_CLIENT";
     public static final String HEARTBEAT_SERVER = "HEARTBEAT_SERVER";
+    
+    //JAVA RMI
+    public static final String SERVICE_SERVER_LIST = "GetRemoteServerList";
 }
