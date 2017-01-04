@@ -1,12 +1,9 @@
-
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -16,13 +13,13 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -32,16 +29,16 @@ import org.apache.commons.io.FileUtils;
 public class ProcessClientRequest extends Thread {
     
     private ServerSocket serverSocket;
-    Socket toClientSocket;
-    BufferedReader in;
-    PrintWriter out;
-    String directoryPath;
-    String serverDirectory;
+    private Socket toClientSocket;
+    private BufferedReader in;
+    private PrintWriter out;
+    private String directoryPath;
+    private String serverDirectory;
     private List<String> cmd;
-    MSG msg, request;
-    MSG requestClientInfo;
-    ObjectInputStream inObj;
-    ObjectOutputStream outObj;
+    private MSG msg, request;
+    private MSG requestClientInfo;
+    private ObjectInputStream inObj;
+    private ObjectOutputStream outObj;
     
     public ProcessClientRequest(ServerSocket serverSocket, Socket toClientSocket, String directoryPath) throws SocketException{
         this.serverSocket = serverSocket;
@@ -56,7 +53,7 @@ public class ProcessClientRequest extends Thread {
         boolean run = true;
         File localDirectory;
         
-        System.out.println("THREAD A COMEAÇAR");
+        System.out.println("<------- THREAD RUNNING AND CONECTED TO :" + toClientSocket.getInetAddress().toString() +"------->");
         
         if(serverSocket == null){
             return;
@@ -68,11 +65,7 @@ public class ProcessClientRequest extends Thread {
             Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        System.out.println("THREAD A PASSAR A INICIALIZAÇÃO.");
-
-        
-        System.out.println("TCP conection started [PORT: " + serverSocket.getLocalPort()+"]");
-        
+        System.out.println("<------- TCP conection started [PORT: " + serverSocket.getLocalPort()+"] ------->");
 
         while (run) {
             try {
@@ -87,13 +80,15 @@ public class ProcessClientRequest extends Thread {
                     break;
                 }
 
-                System.out.println("Recebido \"" + request.getCMD().toString()
+                System.out.println("Received \"" + request.getCMD().toString()
                         + "\" de " + toClientSocket.getInetAddress().getHostAddress()
                         + ":" + toClientSocket.getLocalPort()); //trim apaga os espaços brancos
                 
                 System.out.println("splited :" );      
 
-                String array[] =  directoryPath.split("\\\\");
+                String pattern = Pattern.quote(System.getProperty("file.separator"));
+                String[] array = directoryPath.split(pattern);
+                
                 for(int i = 0; i < array.length; i++)
                     System.out.println(array[i]);
 
@@ -103,8 +98,7 @@ public class ProcessClientRequest extends Thread {
                     run = false;
                     return;
                 }
-                
-                
+                                
                 switch (request.getCMDarg(0).toUpperCase()) {
                     case Constants.CMD_DOWNLOAD_FILE:    //ESTE PRIMEIRO PODE SER MUDADO
                         System.out.println("RECEBI UM DOWNLOAD COMO PRIMEIRO ARGUMENTO");
@@ -145,7 +139,7 @@ public class ProcessClientRequest extends Thread {
                     case Constants.CMD_MOVE_FILE:
                         System.out.println("RECEBI UM MV COMO PRIMEIRO ARGUMENTO");
                                                                             //nome do ficheiro a move   //nome do destino
-                        processMoveRequest(directoryPath + File.separator + File.separator + request.getCMDarg(1),directoryPath + File.separator + request.getCMDarg(2));
+                        processMoveRequest(directoryPath + File.separator + File.separator + request.getCMDarg(1),directoryPath + File.separator + File.separator + request.getCMDarg(2));
                         
                         break;
                     case Constants.CMD_COPY_FILE:
@@ -193,7 +187,6 @@ public class ProcessClientRequest extends Thread {
                     Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex1);
                    return;
                 }
-                                
             }
         }
     }
@@ -235,17 +228,17 @@ public class ProcessClientRequest extends Thread {
     //VISTO
     public boolean directoryExists(File localDirectory){
         if(!localDirectory.exists()){
-            System.out.println("The directory that you try to move  [" + localDirectory + "] doesnt exists!");
+            System.out.println("ERROR : The directory that you try to move  [" + localDirectory + "] doesnt exists!");
             return false;
         }
 
         if(!localDirectory.isDirectory()){
-            System.out.println("The path inserted [" + localDirectory + "] doesnt refer any directory!");
+            System.out.println("ERROR : The path inserted [" + localDirectory + "] doesnt refer any directory!");
             return false;
         }
 
         if(!localDirectory.canRead()){
-            System.out.println("Without permissions to read the directory " + localDirectory + "!");
+            System.out.println("ERROR : Without permissions to read the directory " + localDirectory + "!");
             return false;
         }
         return true;
@@ -253,22 +246,21 @@ public class ProcessClientRequest extends Thread {
     
     public boolean fileExists(File localDirectory){
         if(!localDirectory.exists()){
-            System.out.println("The file that you try to move  [" + localDirectory + "] doesnt exists!");
+            System.out.println("ERROR : The file that you try to move  [" + localDirectory + "] doesnt exists!");
             return false;
         }
 
         if(!localDirectory.isFile()){
-            System.out.println("The path inserted [" + localDirectory + "] doesnt refer any file!");
+            System.out.println("ERROR : The path inserted [" + localDirectory + "] doesnt refer any file!");
             return false;
         }
 
         if(!localDirectory.canRead()){
-            System.out.println("Without permissions to read the directory " + localDirectory + "!");
+            System.out.println("ERROR : Without permissions to read the directory " + localDirectory + "!");
             return false;
         }
         return true;
     }
-     
     //VISTO
     public boolean processFileRequest(String filename)
     {        
@@ -322,7 +314,6 @@ public class ProcessClientRequest extends Thread {
         
         return true;
     }
-    
     //VISTO 
     public boolean processCDRequest(String canonicalPath)
     {          
@@ -339,9 +330,8 @@ public class ProcessClientRequest extends Thread {
 
 
         //Constroi a resposta terminando-a com uma mudanca de lina
-        return sendMSG(new MSG(Constants.CODE_SERVER_CD_OK,Arrays.asList("Changed directory to ... " + directoryPath, directoryPath)));
+        return sendMSG(new MSG(Constants.CODE_SERVER_CD_OK,Arrays.asList("Changed directory to ... " + directoryPath,  onlyClientDir(directoryPath))));
     }
-    
     public boolean processCatRequest(String canonicalPath)
     {          
         if(serverSocket == null){
@@ -363,7 +353,6 @@ public class ProcessClientRequest extends Thread {
          return sendMSG(new MSG(Constants.CODE_SERVER_CAT_OK,text));
 
     }
-    
     //VISTO
     public boolean processLSRequest(String canonicalPath)
     {                
@@ -519,7 +508,6 @@ public class ProcessClientRequest extends Thread {
         }
         return sendMSG(new MSG(Constants.CODE_SERVER_MOVE_ERROR,Arrays.asList("Ocurred an error moving the File :" + filename + "]   ->   " + fileDestination)));
     }
-
     //VISTO
     public boolean sendMSG(MSG msg)
     {
@@ -534,7 +522,6 @@ public class ProcessClientRequest extends Thread {
         }
         return true;
     }
-    
     //VISTO
     public String listar(File directory) {
         String list = "";
@@ -544,8 +531,8 @@ public class ProcessClientRequest extends Thread {
             if(subDirectory != null) {
                 for(String dir : subDirectory){
                     //listar(new File(directory + File.separator + File.separator + dir));
-                    System.out.println(directory + File.separator + File.separator + dir);
-                    list += directory + File.separator + File.separator + dir + "\n";
+                    System.out.println(onlyClientDir(directory + File.separator + dir ));
+                    list += onlyClientDir(directory + File.separator + File.separator + dir + "\n");
                 }
             }
         }
@@ -555,13 +542,17 @@ public class ProcessClientRequest extends Thread {
     public String onlyClientDir(String directory) {
         String path ="";
         
-        String array[] =  path.split("\\\\");
-        
-        for(int i = 2; i < array.length; i++)
-            path += array[i].toString() + File.separator + File.separator;
+        String pattern = Pattern.quote(System.getProperty("file.separator"));
+        String[] array = directory.split(pattern);
+        boolean copy = false;
+        for(int i = 0; i < array.length; i++){
+            if(!array[i].equals(""))
+                if(array[i].equals(Server.name))
+                    copy = true;
+            if(copy)
+                path += array[i].toString() + File.separator + File.separator;
+        }
         
         return path;
     }
-    
-    
 }
