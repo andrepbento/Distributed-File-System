@@ -70,7 +70,7 @@ public class ProcessClientRequest extends Thread {
         
         System.out.println("TCP conection started [PORT: " + serverSocket.getLocalPort()+"]");
         
-        
+
         while (run) {
             try {
                 outObj = new ObjectOutputStream(toClientSocket.getOutputStream());
@@ -303,6 +303,7 @@ public class ProcessClientRequest extends Thread {
         
         return true;
     }
+    
     //VISTO 
     public boolean processCDRequest(String canonicalPath)
     {          

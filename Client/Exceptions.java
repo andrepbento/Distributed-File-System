@@ -106,4 +106,22 @@ public class Exceptions{
             super("Couldn't find my client info"); 
         }
     }
+    
+    static class ErrorCreatingDirectory extends Exception{
+        public ErrorCreatingDirectory(){ 
+            super("Couldn't create the directory"); 
+        }
+    }
+    
+    static class ErrorRemovingFile extends Exception{
+        public ErrorRemovingFile(){ 
+            super("Couldn't remove the file"); 
+        }
+    }
+    
+    static class DirectoryDoesntExist extends Exception{
+        public DirectoryDoesntExist(){ 
+            super("The directory you're trying to use doesn't exist"); 
+        }
+    }
 }
