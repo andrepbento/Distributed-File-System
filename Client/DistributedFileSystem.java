@@ -186,7 +186,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     public void changeWorkingDirectory(String newWorkingDirectoryPath) {
         if(fileSystem == FS_SERVER){
             //sendRequestTCP(CD+" "+newWorkingDirectoryPath) //**************
-        }else if(fileSystem==FS_LOCAL){
+        }else if(fileSystem == FS_LOCAL){
             if(newWorkingDirectoryPath.split("\\").length == 1){
                 if(newWorkingDirectoryPath.equals("..")){
                     
