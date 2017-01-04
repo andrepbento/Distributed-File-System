@@ -11,7 +11,10 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import org.apache.commons.io.FileUtils;
 
 /**
  *
@@ -81,7 +84,11 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         if(fileSystem == FS_DIRECTORY_SERVICE){
             client.sendRequestUdp(Constants.CMD_REGISTER+" "+username+" "+password);
             client.receiveResponseUdp();
-            client.processDirectoryServiceCommand();
+            try{
+                client.processDirectoryServiceCommand();
+            }catch(Exception ex){
+                System.out.println(ex);
+            }
         }
     }
 
@@ -90,7 +97,11 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         if(fileSystem == FS_DIRECTORY_SERVICE){
             client.sendRequestUdp(Constants.CMD_LOGIN+" "+username+" "+password);
             client.receiveResponseUdp();
-            client.processDirectoryServiceCommand();
+            try{
+                client.processDirectoryServiceCommand();
+            }catch(Exception ex){
+                System.out.println(ex);
+            }
         }
     }
 
@@ -99,7 +110,11 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         if(fileSystem == FS_DIRECTORY_SERVICE){
             client.sendRequestUdp(Constants.CMD_LOGOUT);
             client.receiveResponseUdp();
-            client.processDirectoryServiceCommand();
+            try{
+                client.processDirectoryServiceCommand();
+            }catch(Exception ex){
+                System.out.println(ex);
+            }
         }
     }
         
@@ -149,7 +164,11 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
             client.sendRequestUdp(Constants.CMD_LIST + " " + type);
             client.receiveResponseUdp();
-            client.processDirectoryServiceCommand();
+            try{
+                client.processDirectoryServiceCommand();
+            }catch(Exception ex){
+                System.out.println(ex);
+            }
         }
     }
     
@@ -166,10 +185,10 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 File dest = new File(localDirectory + File.separator + destination);
                 
                 if(!origin.exists())
-                    throw new Exceptions.FileDoesntExist();
+                    throw new Exceptions.DirectoryOrFileDoesntExist();
                 
                 if(!dest.exists())
-                    throw  new Exceptions.DirectoryDoesntExist();
+                    throw  new Exceptions.DirectoryOrFileDoesntExist();
                 
                 if(!dest.isDirectory())
                     throw new Exceptions.NotADirectory();
@@ -197,10 +216,10 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 File dest = new File(localDirectory + File.separator + destination);
                 
                 if(!origin.exists())
-                    throw new Exceptions.FileDoesntExist();
+                    throw new Exceptions.DirectoryOrFileDoesntExist();
                 
                 if(!dest.exists())
-                    throw  new Exceptions.DirectoryDoesntExist();
+                    throw  new Exceptions.DirectoryOrFileDoesntExist();
                 
                 if(!dest.isDirectory())
                     throw new Exceptions.NotADirectory();
@@ -256,7 +275,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             }else if(fileSystem == FS_LOCAL){
                 File folder = new File(localDirectory);
                 if(!folder.exists())
-                    throw new Exceptions.DirectoryDoesntExist();
+                    throw new Exceptions.DirectoryOrFileDoesntExist();
                 
                 File[] listOfFiles = folder.listFiles();
 
@@ -278,21 +297,25 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void getFileContent(String fileName) {
         try{
-            if(fileSystem==FS_SERVER){
+            if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_CAT_FILE, fileName));
                 client.sendRequestTcp(msg);
                 client.processServerCommand();
             }else if(fileSystem==FS_LOCAL){
-                try{
-                    BufferedReader in = new BufferedReader(
-                            new FileReader(localDirectory+"\\"+fileName));
-                    System.out.println("\nFile content:");
-                    String line;
-                    while((line = in.readLine()) != null)
-                        System.out.println(line);
-                    in.close();
-                }catch(Exception ex){
-                    ex.printStackTrace();
+                File file = new File(localDirectory + File.separator + fileName);
+
+                if(!file.exists())
+                    throw new Exceptions.DirectoryOrFileDoesntExist();
+
+                if(!file.isFile())
+                    throw  new Exceptions.NotAfile();
+
+                List<String> text = new ArrayList<>();
+                BufferedReader br = new BufferedReader(
+                        new FileReader(localDirectory + File.separator + fileName));
+                String line;
+                while ((line = br.readLine()) != null) {
+                    text.add(line);
                 }
             }
         } catch(Exception ex) {
@@ -304,7 +327,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     public void renameFile(String oldName, String newName) {
         try{
             if(fileSystem == FS_SERVER){
-                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_RENAME, 
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_RENAME_FILE, 
                             oldName, newName));
                 client.sendRequestTcp(msg);
                 client.processServerCommand();
@@ -313,7 +336,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 File newFile = new File(localDirectory + File.separator + newName);
 
                 if (!oldFile.exists())
-                   throw new Exceptions.FileDoesntExist();
+                   throw new Exceptions.DirectoryOrFileDoesntExist();
 
                 if (!oldFile.renameTo(newFile)) {
                     throw new Exceptions.ErrorRenamingFile();
@@ -338,7 +361,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 if(file.delete())
                     System.out.println("\nFile "+fileName+" successfully deleted");
                 else
-                    throw new Exceptions.ErrorRemovingFile();
+                    throw new Exceptions.ErrorRemovingFileOrDirectory();
             }
         } catch(Exception ex) {
             System.out.println(ex);
