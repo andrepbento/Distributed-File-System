@@ -16,11 +16,13 @@ public class HeartbeatThreadSend extends Thread {
     private DatagramPacket packetSend;
     private boolean running;
 
-    public HeartbeatThreadSend(InetAddress ip, DatagramSocket socketSend) {
+    public HeartbeatThreadSend(InetAddress ip, DatagramSocket socketSend,
+            String serverName, int serverSocketPort) {
         this.ip = ip;
         this.socketSend = socketSend;
         MSG heartBeatMSG = new MSG();
-        heartBeatMSG.setCMD(Arrays.asList(Constants.HEARTBEAT_SERVER));
+        heartBeatMSG.setCMD(Arrays.asList(Constants.HEARTBEAT_SERVER, serverName,
+                String.valueOf(serverSocketPort)));
         
         ByteArrayOutputStream baos = new ByteArrayOutputStream(Constants.MAX_SIZE);
         try {

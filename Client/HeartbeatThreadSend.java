@@ -12,14 +12,15 @@ public class HeartbeatThreadSend extends Thread{
     private DatagramPacket packetSend;
     private boolean running;
 
-    public HeartbeatThreadSend(InetAddress ip, int udpSocketPort) {
+    public HeartbeatThreadSend(InetAddress ip, int udpSocketPort, int chatSocketPort) {
         try {
             socketSend = new DatagramSocket();
         } catch(SocketException e) {
             e.printStackTrace();
         }
         MSG heartBeatMSG = new MSG();
-        heartBeatMSG.setCMD(Arrays.asList(Constants.HEARTBEAT_CLIENT, String.valueOf(udpSocketPort)));
+        heartBeatMSG.setCMD(Arrays.asList(Constants.HEARTBEAT_CLIENT, 
+                String.valueOf(udpSocketPort), String.valueOf(chatSocketPort)));
         
         ByteArrayOutputStream baos = new ByteArrayOutputStream(Constants.MAX_SIZE);
         try {

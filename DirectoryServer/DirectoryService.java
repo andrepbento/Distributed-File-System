@@ -15,6 +15,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -172,6 +173,13 @@ public class DirectoryService extends Thread {
         return serversList.get(serverIndex);
     }
     
+    private ServerInfo getServer(String serverName){
+        for(ServerInfo si : getServersList())
+            if(si.getName().equals(serverName))
+                return si;
+        return null;
+    }
+    
     private boolean serverExists(String name){   
         for (ServerInfo s : serversList)
             if(s.getName().equalsIgnoreCase(name))
@@ -263,7 +271,7 @@ public class DirectoryService extends Thread {
                     if(logInClient(receivedMSG.getCMDarg(2), receivedMSG.getCMDarg(3),
                             packet.getAddress(), packet.getPort())) {
                         System.out.println("\tLogin Client OK\t"+receivedMSG.getCMDarg(2)+","+receivedMSG.getCMDarg(3));
-                        sendResponse(new MSG(Constants.CODE_LOGIN_OK));
+                        sendResponse(new MSG(Constants.CODE_LOGIN_OK, Arrays.asList(receivedMSG.getCMDarg(2))));
                     }else{
                         System.out.println("\tLogin Client FAIL\t"+receivedMSG.getCMDarg(2));
                         sendResponse(new MSG(Constants.CODE_LOGIN_FAILURE));
@@ -320,20 +328,36 @@ public class DirectoryService extends Thread {
                 } else {
                     if(receivedMSG.getCMDarg(2).equals("-all")){
                         if(clientsChat.sendChatMSGToAll(
-                                getClient(packet.getAddress(), packet.getPort()).getUsername(),
+                                getClient(packet.getAddress(), packet.getPort()),
                                 receivedMSG))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else
                             sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
                     } else {
                         if(clientsChat.sendChatMSGToDesignatedClients(
-                                getClient(packet.getAddress(), packet.getPort()).getUsername(), 
+                                getClient(packet.getAddress(), packet.getPort()), 
                                 receivedMSG))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else
                             sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
                     }
                 }
+                break;
+            case Constants.CONNECTED:
+                ServerInfo serverInfo = getServer(receivedMSG.getCMDarg(3));
+                ClientInfo clientInfo = getClient(receivedMSG.getCMDarg(2));
+                if(serverInfo != null && clientInfo != null)
+                    serverInfo.addConnectedClient(clientInfo);
+                else
+                    System.out.println("getServer() ERROR!");
+                break;
+            case Constants.DISCONNECT:
+                ServerInfo serverInfo2 = getServer(receivedMSG.getCMDarg(3));
+                ClientInfo clientInfo2 = getClient(receivedMSG.getCMDarg(2));
+                if(serverInfo2 != null && clientInfo2 != null)
+                    serverInfo2.removeConnectedClient(clientInfo2);
+                else
+                    System.out.println("getServer() ERROR!");
                 break;
             default:
                 sendResponse(new MSG(Constants.CODE_CMD_NOT_RECOGNIZED));
