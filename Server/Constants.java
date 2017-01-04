@@ -77,6 +77,10 @@ public final class Constants {
 
     public static final int CODE_SERVER_LS_OK = 1016;
     public static final int CODE_SERVER_LS_ERROR = 1017;
+    
+    public static final int CODE_SERVER_CAT_OK = 1018;
+    public static final int CODE_SERVER_CAT_ERROR = 1019;
+
 
     
 }

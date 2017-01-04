@@ -59,7 +59,6 @@ public class Server{
         
         System.out.println("CRIEI UMA DIRECTORIA EM: " + this.localDirectory);
         new File(this.localDirectory).mkdirs();
-        
     }
 
     //Regista-se mas se já ouver um server com o mesmo nome não regista

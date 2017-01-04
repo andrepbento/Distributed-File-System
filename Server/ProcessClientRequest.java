@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -35,6 +36,7 @@ public class ProcessClientRequest extends Thread {
     BufferedReader in;
     PrintWriter out;
     String directoryPath;
+    String serverDirectory;
     private List<String> cmd;
     MSG msg, request;
     MSG requestClientInfo;
@@ -45,6 +47,7 @@ public class ProcessClientRequest extends Thread {
         this.serverSocket = serverSocket;
         this.toClientSocket = toClientSocket;
         this.directoryPath = directoryPath;
+        this.serverDirectory = directoryPath;
         cmd = new ArrayList<>();
     }
     
@@ -101,12 +104,6 @@ public class ProcessClientRequest extends Thread {
                     return;
                 }
                 
-                //TRATA DOS CLIENTES POSTERIORMENTE
-                /*if (request.getCMD().size() < 2) {
-                    sendMSG(new MSG(Constants.CODE_CMD_NOT_RECOGNIZED));
-                    run = false;
-                    return;
-                }*/
                 
                 switch (request.getCMDarg(0).toUpperCase()) {
                     case Constants.CMD_DOWNLOAD_FILE:    //ESTE PRIMEIRO PODE SER MUDADO
@@ -128,9 +125,9 @@ public class ProcessClientRequest extends Thread {
                             if(request.getCMDarg(1).equals("..")){
                                if(!(pathParts[pathParts.length].equals(requestClientInfo.getClientList().get(0).getUsername())))
                                    for(int i = 0; i < pathParts.length; i++)
-                            
+                                       System.out.println("para compilar");
                             }       
-                            localDirectory = new File(directoryPath + File.separator + request.getCMDarg(1));
+                            localDirectory = new File(directoryPath + File.separator + File.separator + request.getCMDarg(1));
                             if(directoryExists(localDirectory)){
                                 processCDRequest(localDirectory.getCanonicalPath());
                             }
@@ -139,21 +136,21 @@ public class ProcessClientRequest extends Thread {
                     case Constants.CMD_MK_DIR:
                         System.out.println("RECEBI UM MKDIR COMO PRIMEIRO ARGUMENTO");
                         
-                        localDirectory = new File(directoryPath+File.separator+request.getCMDarg(1));
+                        localDirectory = new File(directoryPath+File.separator + File.separator +request.getCMDarg(1));
                         
                         if(!directoryExists(localDirectory)){
-                            processMKDIRequest(directoryPath+File.separator+request.getCMDarg(1));
+                            processMKDIRequest(directoryPath+File.separator+File.separator+request.getCMDarg(1));
                         }
                         break;
                     case Constants.CMD_MOVE_FILE:
                         System.out.println("RECEBI UM MV COMO PRIMEIRO ARGUMENTO");
                                                                             //nome do ficheiro a move   //nome do destino
-                        processMoveRequest(directoryPath + File.separator + request.getCMDarg(1),directoryPath + File.separator + request.getCMDarg(2));
+                        processMoveRequest(directoryPath + File.separator + File.separator + request.getCMDarg(1),directoryPath + File.separator + request.getCMDarg(2));
                         
                         break;
                     case Constants.CMD_COPY_FILE:
                         System.out.println("RECEBI UM COPY COMO PRIMEIRO ARGUMENTO");
-                            localDirectory = new File(directoryPath + File.separator + request.getCMDarg(2));
+                            localDirectory = new File(directoryPath + File.separator + File.separator + request.getCMDarg(2));
                             if(directoryExists(localDirectory)){
                                                                                 //nome do ficheiro a move   //nome do destino
                                 processCopyRequest(request.getCMDarg(1),request.getCMDarg(2));
@@ -166,9 +163,9 @@ public class ProcessClientRequest extends Thread {
                     case Constants.CMD_RM_FILE:
                         System.out.println("RECEBI UM RMDIR COMO PRIMEIRO ARGUMENTO");
                         
-                        localDirectory = new File(directoryPath + File.separator + request.getCMDarg(1));
+                        localDirectory = new File(directoryPath + File.separator + File.separator + request.getCMDarg(1));
                         if(directoryExists(localDirectory)){                        //file name
-                            processRMDIRequest(directoryPath + File.separator + request.getCMDarg(1));
+                            processRMDIRequest(directoryPath + File.separator + File.separator + request.getCMDarg(1));
                         }
                         break;
                     case Constants.CMD_LS_DIR:
@@ -214,7 +211,7 @@ public class ProcessClientRequest extends Thread {
             return false;
         }
         System.out.println("CRIEI UMA DIRECTORIA EM: " + directoryPath);
-        directoryPath = directoryPath + File.separator + requestClientInfo.getClientList().get(0).getUsername();
+        directoryPath = directoryPath + File.separator + File.separator + requestClientInfo.getClientList().get(0).getUsername();
         new File(directoryPath).mkdir();
                 
                 sendMSG(new MSG(Constants.CODE_CONNECT_OK, Arrays.asList(directoryPath)));
@@ -266,9 +263,9 @@ public class ProcessClientRequest extends Thread {
         System.out.println("Sending files...");
                 try{
 
-                    requestedCanonicalFilePath = new File(directoryPath+File.separator+filename).getCanonicalPath();
+                    requestedCanonicalFilePath = new File(directoryPath+File.separator + File.separator +filename).getCanonicalPath();
 
-                    if(!requestedCanonicalFilePath.startsWith(directoryPath+File.separator)){
+                    if(!requestedCanonicalFilePath.startsWith(directoryPath+File.separator + File.separator)){
                         sendMSG(new MSG(Constants.CODE_SERVER_DOWNLOAD_ERROR,Arrays.asList("The base directory doenst correspond " + directoryPath +"!")));
                         return false;
                     }
@@ -319,8 +316,31 @@ public class ProcessClientRequest extends Thread {
 
 
         //Constroi a resposta terminando-a com uma mudanca de lina
-        return sendMSG(new MSG(Constants.CODE_SERVER_CD_OK,Arrays.asList("Changed directory to ... " + directoryPath)));
+        return sendMSG(new MSG(Constants.CODE_SERVER_CD_OK,Arrays.asList("Changed directory to ... " + directoryPath, directoryPath)));
     }
+    
+    public boolean processCatRequest(String canonicalPath)
+    {          
+        if(serverSocket == null){
+            return false;
+        }
+
+        System.out.println("CAT FILE...");
+        List<String> text = new ArrayList<>();
+        System.out.println("Received the file:  " + canonicalPath);
+        try (BufferedReader br = new BufferedReader(new FileReader(canonicalPath))) {
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                text.add(line);
+            }
+         }catch(IOException ex){
+             System.out.println("NÃO DEU PARA LER O FICHEIRO");
+             return sendMSG(new MSG(Constants.CODE_SERVER_CAT_ERROR,Arrays.asList("Comand cat error in file" + directoryPath)));
+         }
+         return sendMSG(new MSG(Constants.CODE_SERVER_CAT_OK,text));
+
+    }
+    
     //VISTO
     public boolean processLSRequest(String canonicalPath)
     {                
@@ -340,7 +360,6 @@ public class ProcessClientRequest extends Thread {
     
             
     }
-      
     //VISTO
     public boolean processMKDIRequest(String canonicalPath)
     {        
@@ -397,10 +416,10 @@ public class ProcessClientRequest extends Thread {
                  newFileName);
         try{
         // File (or directory) with old name
-        File oldFile = new File(directoryPath + File.separator + filename);
+        File oldFile = new File(directoryPath + File.separator + File.separator + filename);
 
         // File (or directory) with new name
-        File newFile = new File(directoryPath + File.separator + newFileName);
+        File newFile = new File(directoryPath + File.separator + File.separator + newFileName);
 
         if (newFile.exists())
            throw new java.io.IOException("You already have this name assigned-> " + newFileName);
@@ -433,9 +452,9 @@ public class ProcessClientRequest extends Thread {
         try{
             
             
-        File file = new File( directoryPath + File.separator + filename);
-        new File(directoryPath + File.separator + fileDestination + File.separator + filename).mkdirs();
-        File fileDest = new File(directoryPath + File.separator + fileDestination + File.separator + filename);
+        File file = new File( directoryPath + File.separator + File.separator + filename);
+        new File(directoryPath + File.separator + File.separator + fileDestination + File.separator + File.separator + filename).mkdirs();
+        File fileDest = new File(directoryPath + File.separator + File.separator + fileDestination + File.separator + File.separator + filename);
         FileUtils.copyDirectory(file, fileDest);
         
         return sendMSG(new MSG(Constants.CODE_SERVER_COPY_OK,Arrays.asList("SUCCESSFULY COPIED THE FILE [" + filename + "] to destination [" + fileDestination + filename + "")));
@@ -493,12 +512,30 @@ public class ProcessClientRequest extends Thread {
             String[] subDirectory = directory.list();
             if(subDirectory != null) {
                 for(String dir : subDirectory){
-                    //listar(new File(directory + File.separator  + dir));
-                    System.out.println(directory + File.separator + dir);
-                    list += directory + File.separator+ dir + "\n";
+                    //listar(new File(directory + File.separator + File.separator + dir));
+                    System.out.println(directory + File.separator + File.separator + dir);
+                    list += directory + File.separator + File.separator + dir + "\n";
                 }
             }
         }
         return list;
     }
+    
+    public String verificaCaminho(File directory) {
+        String list = "";
+        if(directory.isDirectory()) {
+            System.out.println(directory.getPath());
+            String[] subDirectory = directory.list();
+            if(subDirectory != null) {
+                for(String dir : subDirectory){
+                    //listar(new File(directory + File.separator + File.separator + dir));
+                    System.out.println(directory + File.separator + File.separator + dir);
+                    list += directory + File.separator + File.separator + dir + "\n";
+                }
+            }
+        }
+        return list;
+    }
+    
+    
 }
