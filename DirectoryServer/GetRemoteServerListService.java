@@ -1,13 +1,24 @@
 
-import java.rmi.Remote;
-
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.List;
 
 /**
  *
  * @author andre
  */
-public interface GetRemoteServerListService extends Remote {
+public class GetRemoteServerListService extends UnicastRemoteObject 
+        implements GetRemoteServerListInterface {
     
-     //public byte[] getFileChunk(String fileName, long offset) throws java.rmi.RemoteException;
+    private List<ServerInfo> serverList;
+    
+    public GetRemoteServerListService(List<ServerInfo> serverList) {
+        this.serverList = serverList;
+    }
+    
+    @Override
+    public List<ServerInfo> getServerList() throws RemoteException {
+        return serverList;
+    }
     
 }
