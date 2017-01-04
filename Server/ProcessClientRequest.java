@@ -151,7 +151,7 @@ public class ProcessClientRequest extends Thread {
                     case Constants.CMD_COPY_FILE:
                         System.out.println("RECEBI UM COPY COMO PRIMEIRO ARGUMENTO");
                             localDirectory = new File(directoryPath + File.separator + File.separator + request.getCMDarg(2));
-                            if(directoryExists(localDirectory)){
+                            if(directoryExists(localDirectory) || fileExists(localDirectory)){
                                                                                 //nome do ficheiro a move   //nome do destino
                                 processCopyRequest(request.getCMDarg(1),request.getCMDarg(2));
                             }
@@ -164,7 +164,7 @@ public class ProcessClientRequest extends Thread {
                         System.out.println("RECEBI UM RMDIR COMO PRIMEIRO ARGUMENTO");
                         
                         localDirectory = new File(directoryPath + File.separator + File.separator + request.getCMDarg(1));
-                        if(directoryExists(localDirectory)){                        //file name
+                        if(directoryExists(localDirectory)|| fileExists(localDirectory)){                        //file name
                             processRMDIRequest(directoryPath + File.separator + File.separator + request.getCMDarg(1));
                         }
                         break;
@@ -182,14 +182,18 @@ public class ProcessClientRequest extends Thread {
                 }
             }catch (ClassNotFoundException ex) {
                 ex.printStackTrace();
+                return;
             } catch (IOException ex) {
                 Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex);
                 run = false;
                 try {
                     toClientSocket.close();
+                    return;
                 } catch (IOException ex1) {
                     Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex1);
+                   return;
                 }
+                                
             }
         }
     }
@@ -237,6 +241,24 @@ public class ProcessClientRequest extends Thread {
 
         if(!localDirectory.isDirectory()){
             System.out.println("The path inserted [" + localDirectory + "] doesnt refer any directory!");
+            return false;
+        }
+
+        if(!localDirectory.canRead()){
+            System.out.println("Without permissions to read the directory " + localDirectory + "!");
+            return false;
+        }
+        return true;
+    }
+    
+    public boolean fileExists(File localDirectory){
+        if(!localDirectory.exists()){
+            System.out.println("The file that you try to move  [" + localDirectory + "] doesnt exists!");
+            return false;
+        }
+
+        if(!localDirectory.isFile()){
+            System.out.println("The path inserted [" + localDirectory + "] doesnt refer any file!");
             return false;
         }
 
@@ -478,17 +500,25 @@ public class ProcessClientRequest extends Thread {
         
         File fileOrigin = new File(filename);
         File fileDest = new File(fileDestination);
-        Path source = fileOrigin.toPath();
-        Path newdir = fileDest.toPath();
-        Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
-        
-        return sendMSG(new MSG(Constants.CODE_SERVER_MOVE_OK,Arrays.asList("Successfuly moved the File [" 
-                + filename + "] to destination [" + fileDestination + "]")));
+            if(directoryExists(fileOrigin) || fileExists(fileOrigin)){
+                if(directoryExists(fileOrigin)){
+
+                    Path source = fileOrigin.toPath();
+                    Path newdir = fileDest.toPath();
+                    Files.move(source, newdir.resolve(source.getFileName()), REPLACE_EXISTING);
+                    System.out.println("ola");
+                    return sendMSG(new MSG(Constants.CODE_SERVER_MOVE_OK,Arrays.asList("Successfuly moved the File [" 
+                            + filename + "] to destination [" + fileDestination + "]")));
+                }
+
+            }
         }catch(IOException ex){
             System.out.println(ex.toString());
             return sendMSG(new MSG(Constants.CODE_SERVER_MOVE_ERROR,Arrays.asList("Ocurred an error moving the File :" + filename + "]   ->   " + fileDestination)));
         }
+        return sendMSG(new MSG(Constants.CODE_SERVER_MOVE_ERROR,Arrays.asList("Ocurred an error moving the File :" + filename + "]   ->   " + fileDestination)));
     }
+
     //VISTO
     public boolean sendMSG(MSG msg)
     {
@@ -521,20 +551,15 @@ public class ProcessClientRequest extends Thread {
         return list;
     }
     
-    public String verificaCaminho(File directory) {
-        String list = "";
-        if(directory.isDirectory()) {
-            System.out.println(directory.getPath());
-            String[] subDirectory = directory.list();
-            if(subDirectory != null) {
-                for(String dir : subDirectory){
-                    //listar(new File(directory + File.separator + File.separator + dir));
-                    System.out.println(directory + File.separator + File.separator + dir);
-                    list += directory + File.separator + File.separator + dir + "\n";
-                }
-            }
-        }
-        return list;
+    public String onlyClientDir(String directory) {
+        String path ="";
+        
+        String array[] =  path.split("\\\\");
+        
+        for(int i = 2; i < array.length; i++)
+            path += array[i].toString() + File.separator + File.separator;
+        
+        return path;
     }
     
     
