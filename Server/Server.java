@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,7 +39,6 @@ public class Server{
     private List<Socket> listClientsSockets;
     private MSG msgReceived;
 
-    
     public Server(String name, InetAddress ip, int sendingPort, String localDirectory) throws SocketException, IOException 
     {
         this.name = name;
@@ -191,6 +185,12 @@ public class Server{
         });
     }
     
+    public void startHeartBeat() {
+        heartBeat = new HeartbeatThreadSend(ip, socket, 
+                    name, serverSocket.getLocalPort());
+        heartBeat.start();
+    }
+    
     public static void main(String[] args) {
         InetAddress ip;
         int porto;
@@ -217,8 +217,7 @@ public class Server{
                 server.stopServer();
             
             //INICIALIZAR A HEARTBEAT THREAD
-            server.heartBeat = new HeartbeatThreadSend(ip, socket);
-            server.heartBeat.start();
+            server.startHeartBeat();
             
             //INICIALIZA COMUNICAÇÃO TCP
             

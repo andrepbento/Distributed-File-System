@@ -16,15 +16,16 @@ public class ChatThreadReceive extends Thread{
     public ChatThreadReceive(){
         running = true;
         try {
-            //socket = new DatagramSocket(0);
-            socket = new DatagramSocket(Constants.REC_CHAT_PORT);
+            socket = new DatagramSocket(0);
+            System.out.println("ChatThreadReceive started at port: "
+                    +socket.getLocalPort());
         } catch (SocketException ex) {
             ex.printStackTrace();
         }
     }
     
-    public int getDatagramSocketPort(){
-        return socket.getPort();
+    public int getDatagramSocketPort() {
+        return socket.getLocalPort();
     }
     
     public void terminate(){                

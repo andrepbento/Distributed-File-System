@@ -16,16 +16,21 @@ public class HeartbeatThreadReceive extends Thread {
         packet = null;
     }
     
-    private void setServerHeartBeatStateOn(ServerInfo si) {
+    private void setServerHeartBeatStateOn(ServerInfo si, String serverName,
+            int serverSocketPort) {
         for(ServerInfo s : DirectoryService.serversList)
-            if(s.equals(si))
+            if(s.equals(si) && s.getName().equals(serverName)) { // UM BOCADO ESTRANHO... Alterar o equals do SI para que usufrua do serverName
                 s.setHeartBeatState(true);
+                s.setServerSocketPort(serverSocketPort);
+            }
     }
     
-    private void setClientHeartBeatStateOn(ClientInfo ci) {
+    private void setClientHeartBeatStateOn(ClientInfo ci, int chatDatagramSocketPort) {
         for(ClientInfo c : DirectoryService.clientsList)
-            if(c.equals(ci))
+            if(c.equals(ci)) {
                 c.setHeartBeatState(true);
+                c.setChatDatagramSocketPort(chatDatagramSocketPort);
+            }
     }
     
     private void printConnectedServers() {
@@ -67,11 +72,13 @@ public class HeartbeatThreadReceive extends Thread {
                 
                 if(receivedMSG.getCMDarg(0).equals(Constants.HEARTBEAT_SERVER)) {
                     System.out.println(Constants.HEARTBEAT_SERVER+" received!");
-                    setServerHeartBeatStateOn(new ServerInfo(packet.getAddress(), packet.getPort()));
+                    setServerHeartBeatStateOn(new ServerInfo(packet.getAddress(), 
+                            packet.getPort()), receivedMSG.getCMDarg(1), // FALTA DAR USO AO serverName 
+                            Integer.parseInt(receivedMSG.getCMDarg(2)));
                 } else if(receivedMSG.getCMDarg(0).equals(Constants.HEARTBEAT_CLIENT)) {
                     System.out.println(Constants.HEARTBEAT_CLIENT+" received!");
-                    setClientHeartBeatStateOn(new ClientInfo(packet.getAddress(), 
-                            Integer.parseInt(receivedMSG.getCMDarg(1))));
+                    setClientHeartBeatStateOn(new ClientInfo(packet.getAddress(),
+                            packet.getPort()), Integer.parseInt(receivedMSG.getCMDarg(1)));
                 } else
                     System.out.println("Hearth-Beat received NOT RECOGNIZED!");
                     // PODE SER UMA LIGACAO CONHECIDA... PENSAR EM TENTAR RE-ESTABLECER LIGACAO
