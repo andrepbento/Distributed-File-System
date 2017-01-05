@@ -26,7 +26,7 @@ import java.util.List;
  * @author Luis
  */
 public class Server{
-    private String name;
+    public static String name;
     private String localDirectory;
     private static DatagramSocket socket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
@@ -50,8 +50,8 @@ public class Server{
         listClientsPRequest = new ArrayList<>();
         serverSocket = new ServerSocket(0);
         this.localDirectory = localDirectory + "" + name;
-        
-        System.out.println("CRIEI UMA DIRECTORIA EM: " + this.localDirectory);
+        System.out.println("<-------SERVER RUNNING WITH THE NAME [ " + name + " ] ------->");
+        System.out.println("Created an directory : [" + this.localDirectory +"]");
         new File(this.localDirectory).mkdirs();
     }
 
@@ -88,7 +88,7 @@ public class Server{
         } catch(IOException ex) {
             ex.printStackTrace();
         }
-        System.out.println("Registration submitted...");
+        System.out.println("\t\t REGISTRATRION SUBMITTED ...");
     }
     
     public boolean receiveRegisterAnswer(){
@@ -97,7 +97,6 @@ public class Server{
             socket.setSoTimeout(3000);
             socket.receive(packet);
             
-
             ByteArrayInputStream bin = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
             ObjectInputStream ois = new ObjectInputStream(bin);
 
@@ -109,30 +108,27 @@ public class Server{
 
             switch(code){
                 case Constants.CODE_SERVER_REGISTER_OK:
-                    System.out.println("Register OK");
                     return true;
                 case Constants.CODE_SERVER_REGISTER_FAILURE:
-                    throw  new Exceptions.ConnectFailure("Register FAILURE");
+                    throw  new Exceptions.ConnectFailure("<------- REGISTER FAILURE ------->");
             }
         }catch(ClassNotFoundException | IOException e){
             e.printStackTrace();
         }catch(Exceptions.ConnectFailure ex){
             System.out.println("\n"+ex);
         }finally{
-            //this.closeSocket();
+            
         }
         return false;
     }
     
     public void processClientConnections(){
-        
         try{
             
             while(true){
-                System.out.println("Waiting client connections: "
-                        +InetAddress.getLocalHost().getHostAddress()+":"
-                        +serverSocket.getLocalPort());
-
+                System.out.println("\t<------- WAITING CLIENT CONECTIONS ------->" +
+                        "\n\t\t" +InetAddress.getLocalHost().getHostAddress()+":"+serverSocket.getLocalPort());
+                
                 Socket clientSocket = serverSocket.accept();
                 
                 if(clientSocket == null)
@@ -173,14 +169,14 @@ public class Server{
     
     public void stopServer(){
         closeSocket();
-        System.out.println("Server stoped!");
+        System.out.println("<-------Server stoped!------->");
         System.exit(0);
     }
     
     public static void serverShutdown(){
     Runtime.getRuntime().addShutdownHook(new Thread() {
               public void run() {
-                    System.out.println(" END ");
+                    System.out.println("<------- END ------->");
               }
         });
     }
