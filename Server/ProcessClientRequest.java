@@ -39,6 +39,7 @@ public class ProcessClientRequest extends Thread {
     private MSG requestClientInfo;
     private ObjectInputStream inObj;
     private ObjectOutputStream outObj;
+    String pattern;
     
     public ProcessClientRequest(ServerSocket serverSocket, Socket toClientSocket, String directoryPath) throws SocketException{
         this.serverSocket = serverSocket;
@@ -46,6 +47,7 @@ public class ProcessClientRequest extends Thread {
         this.directoryPath = directoryPath;
         this.serverDirectory = directoryPath;
         cmd = new ArrayList<>();
+        pattern = Pattern.quote(System.getProperty("file.separator"));
     }
     
     @Override
@@ -66,12 +68,17 @@ public class ProcessClientRequest extends Thread {
         }
         
         System.out.println("<------- TCP conection started [PORT: " + serverSocket.getLocalPort()+"] ------->");
-
+        /*try {
+            outObj = new ObjectOutputStream(toClientSocket.getOutputStream());
+            outObj.flush();
+            inObj = new ObjectInputStream(toClientSocket.getInputStream());
+        } catch (IOException ex) {
+            System.out.println("DEU FORA AQUI");
+            Logger.getLogger(ProcessClientRequest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        */
         while (run) {
             try {
-                outObj = new ObjectOutputStream(toClientSocket.getOutputStream());
-                inObj = new ObjectInputStream(toClientSocket.getInputStream());
-
                 request = (MSG) (inObj.readObject());
                 
                 if (request == null) {
@@ -85,19 +92,11 @@ public class ProcessClientRequest extends Thread {
                         + ":" + toClientSocket.getLocalPort()); //trim apaga os espaços brancos
                 
                 System.out.println("splited :" );      
-
-                String pattern = Pattern.quote(System.getProperty("file.separator"));
+                
                 String[] array = directoryPath.split(pattern);
                 
                 for(int i = 0; i < array.length; i++)
                     System.out.println(array[i]);
-
-                if (request.getCMDarg(0).toUpperCase() == "DISCONNECT") {
-                    sendMSG(new MSG(Constants.CODE_DISCONNECT_OK));
-                    toClientSocket.close();
-                    run = false;
-                    return;
-                }
                                 
                 switch (request.getCMDarg(0).toUpperCase()) {
                     case Constants.CMD_DOWNLOAD_FILE:    //ESTE PRIMEIRO PODE SER MUDADO
@@ -111,21 +110,34 @@ public class ProcessClientRequest extends Thread {
                         break;
                     case Constants.CMD_CD_DIR:
                         System.out.println("RECEBI UM CD COMO PRIMEIRO ARGUMENTO");
-                        //if(request.getCMDarg(1).contains(requestClientInfo.getClientList().get(0).getUsername())){
-                        System.out.println("splited :" );      
-
-                        String pathParts[] =  directoryPath.split(directoryPath);
+                        String pathParts[] =  directoryPath.split(pattern);
+                        String newPath = "";
                        
                             if(request.getCMDarg(1).equals("..")){
-                               if(!(pathParts[pathParts.length].equals(requestClientInfo.getClientList().get(0).getUsername())))
-                                   for(int i = 0; i < pathParts.length; i++)
-                                       System.out.println("para compilar");
-                            }       
-                            localDirectory = new File(directoryPath + File.separator + File.separator + request.getCMDarg(1));
+                               if(!(pathParts[pathParts.length-1].equals(requestClientInfo.getClientList().get(0).getUsername()))){
+                                   for(int i = 0; i < pathParts.length - 1; i++)
+                                       newPath += pathParts[i] + File.separator;
+                                   sendMSG(new MSG(Constants.CODE_SERVER_CD_OK,Arrays.asList("Changed directory to ... " + directoryPath,  onlyClientDir(newPath))));
+                               }
+                            }
+                            else{
+                            localDirectory = new File(directoryPath+File.separator + File.separator +request.getCMDarg(1));
+                                if(directoryExists(localDirectory)){
+                                    processCDRequest(directoryPath+File.separator+File.separator+request.getCMDarg(1));
+                                }
+                            }
+                            System.out.println(newPath);
+                            /*localDirectory = new File(directoryPath + File.separator + File.separator + request.getCMDarg(1));
                             if(directoryExists(localDirectory)){
                                 processCDRequest(localDirectory.getCanonicalPath());
-                            }
+                            }*/
                         //}
+                        break;
+                        case Constants.CMD_DISCONNECT:
+                        System.out.println("RECEBI UM DISCONNECT COMO PRIMEIRO ARGUMENTO");
+                            sendMSG(new MSG(Constants.CODE_DISCONNECT_OK));
+                            toClientSocket.close();
+                            run = false;
                         break;
                     case Constants.CMD_MK_DIR:
                         System.out.println("RECEBI UM MKDIR COMO PRIMEIRO ARGUMENTO");
@@ -171,6 +183,29 @@ public class ProcessClientRequest extends Thread {
                             processLSRequest(directoryPath);
                         }
                         break;
+                    case Constants.CMD_CAT_FILE:
+                        System.out.println("RECEBI UM CAT COMO PRIMEIRO ARGUMENTO");
+                        
+                        localDirectory = new File(directoryPath);
+                        File aux =  new File(directoryPath+File.separator+request.getCMDarg(1).toString());
+                        if(fileExists(aux)){
+                            processCatRequest(directoryPath+File.separator+request.getCMDarg(1).toString());
+                        }
+                        break;
+                    case Constants.CMD_RENAME_FILE:
+                        System.out.println("RECEBI UM RENAME COMO PRIMEIRO ARGUMENTO");
+                        
+                        localDirectory = new File(directoryPath);
+                        
+                        if(fileExists(new File(directoryPath+File.separator+request.getCMDarg(1).toString()))
+                                && !fileExists(new File(directoryPath+File.separator+request.getCMDarg(2).toString()))){
+                            processRenameRequest(directoryPath + File.separator + File.separator + request.getCMDarg(1),directoryPath + File.separator + File.separator + request.getCMDarg(2));
+                        }
+                        erro if(directoryExists(new File(directoryPath+File.separator+request.getCMDarg(1).toString()))
+                                && !directoryExists(new File(directoryPath+File.separator+request.getCMDarg(2).toString()))){
+                            processRenameRequest(directoryPath + File.separator + File.separator + request.getCMDarg(1),directoryPath + File.separator + File.separator + request.getCMDarg(2));
+                        }
+                        break;
                     default:
                         System.out.println("CALMA QUE EU CHEGUEI AO DEFAULT E NÃO DEVO TER ENCONTRADO NADA");
                 }
@@ -195,6 +230,8 @@ public class ProcessClientRequest extends Thread {
        try{
             outObj = new ObjectOutputStream(toClientSocket.getOutputStream());
             
+            outObj.flush();
+            
             sendMSG(new MSG(Constants.CODE_CONNECT_OK));
             
             inObj = new ObjectInputStream(toClientSocket.getInputStream());
@@ -215,6 +252,7 @@ public class ProcessClientRequest extends Thread {
         
         }catch(IOException ex){
             System.out.println("NAO RECEBI CORRECTAMENTE OS COMANDOS CLIENTINFO");
+            ex.printStackTrace();
              toClientSocket.close();
             return false;
         } catch (ClassNotFoundException ex) {
@@ -344,7 +382,7 @@ public class ProcessClientRequest extends Thread {
         try (BufferedReader br = new BufferedReader(new FileReader(canonicalPath))) {
             String line = null;
             while ((line = br.readLine()) != null) {
-                text.add(line);
+                text.add(line + "\n");
             }
          }catch(IOException ex){
              System.out.println("NÃO DEU PARA LER O FICHEIRO");
@@ -423,22 +461,22 @@ public class ProcessClientRequest extends Thread {
         }
 
         System.out.println("CHANGING THE NAME OF DIRECTORY/FILE...");
-        
-        System.out.println("Received: OldName: " + filename + "   NewName:  " + 
-                 newFileName);
         try{
         // File (or directory) with old name
-        File oldFile = new File(directoryPath + File.separator + File.separator + filename);
+        File oldFile = new File(filename);
 
         // File (or directory) with new name
-        File newFile = new File(directoryPath + File.separator + File.separator + newFileName);
+        File newFile = new File(newFileName);
 
+        if (oldFile.exists())
+                System.out.println("NAO DEU ERRO");
+        
         if (newFile.exists())
            throw new java.io.IOException("You already have this name assigned-> " + newFileName);
         
         // Rename file (or directory)
         boolean success = oldFile.renameTo(newFile);
-
+        
         if (!success) {
            throw new java.io.IOException("Ocurred an error renaming the File");
         }
@@ -542,7 +580,6 @@ public class ProcessClientRequest extends Thread {
     public String onlyClientDir(String directory) {
         String path ="";
         
-        String pattern = Pattern.quote(System.getProperty("file.separator"));
         String[] array = directory.split(pattern);
         boolean copy = false;
         for(int i = 0; i < array.length; i++){

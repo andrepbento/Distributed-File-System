@@ -6,7 +6,6 @@ import java.net.InetAddress;
  *
  * @author andre
  */
-
 public class ClientInfo implements Serializable {
     static final long serialVersionUID = 1010L;
     private String username;
