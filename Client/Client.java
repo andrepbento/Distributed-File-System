@@ -18,8 +18,6 @@ import java.util.Scanner;
 public class Client {    
     private DatagramSocket udpSocket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
-    private ObjectInputStream oIn;
-    private ObjectOutputStream oOut;
     private InetAddress directoryServiceIp;
     private int directoryServicePort;
     private String line;
@@ -89,11 +87,12 @@ public class Client {
             msg = new MSG();
             fillMsg(Constants.CLIENT+" "+cmd);
             ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-            oOut = new ObjectOutputStream(bOut);
+            ObjectOutputStream oOut = new ObjectOutputStream(bOut);
             oOut.writeObject(msg);
             oOut.flush();
             packet = new DatagramPacket(bOut.toByteArray(), bOut.toByteArray().length, directoryServiceIp, directoryServicePort);
             udpSocket.send(packet);
+            oOut.close();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -103,12 +102,13 @@ public class Client {
         try {
             packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
             udpSocket.receive(packet);
-            oIn = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
+            ObjectInputStream oIn = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
             
             Object obj = oIn.readObject();
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
+            oIn.close();
         } catch (IOException | ClassNotFoundException ex) {
             ex.printStackTrace();
         }
@@ -116,9 +116,10 @@ public class Client {
     
     public void sendRequestTcp(MSG msg){
         try {
-            oOut = new ObjectOutputStream(currentConnection.getSocket().getOutputStream());
+            ObjectOutputStream oOut = new ObjectOutputStream(currentConnection.getSocket().getOutputStream());
             oOut.writeObject(msg);
             oOut.flush();
+            oOut.close();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -126,12 +127,13 @@ public class Client {
     
     public void receiveResponseTcp() {
         try{
-            oIn = new ObjectInputStream(getCurrentConnection().
+            ObjectInputStream oIn = new ObjectInputStream(getCurrentConnection().
                     getSocket().getInputStream());
             Object obj = oIn.readObject();
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
+            oIn.close();
             processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();
@@ -140,12 +142,13 @@ public class Client {
     
     public void receiveResponseTcp(String serverName) {
         try{
-            oIn = new ObjectInputStream(getServerConnection(serverName).
+            ObjectInputStream oIn = new ObjectInputStream(getServerConnection(serverName).
                     getSocket().getInputStream());
             Object obj = oIn.readObject();
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
+            oIn.close();
             processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();

@@ -139,12 +139,12 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                             msg.setClientList(Arrays.asList(client.getMyClientInfo()));
                             client.sendRequestUdp(Constants.CMD_CONNECT + " " + 
                                     client.getUsername() + " " + serverName);
-                            client.setCurrentConnection(client.getServerConnection(serverName));
-                            client.getCurrentConnection().setCurrentPath(serverName);
+                            ServerConnection serverC = client.getServerConnection(serverName);
+                            client.setCurrentConnection(serverC);
                             client.getCurrentConnection().setConnected(true);
-                            fileSystem = FS_SERVER;
                             client.sendRequestTcp(msg);
                             client.receiveResponseTcp();
+                            fileSystem = FS_SERVER;
                         }else
                             throw new Exceptions.MyClientInfoNotFound();
                     }
