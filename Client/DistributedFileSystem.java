@@ -144,6 +144,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                             client.getCurrentConnection().setConnected(true);
                             fileSystem = FS_SERVER;
                             client.sendRequestTcp(msg);
+                            client.receiveResponseTcp();
                         }else
                             throw new Exceptions.MyClientInfoNotFound();
                     }
@@ -206,7 +207,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_COPY_FILE, 
                         fileName, destination));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }else if(fileSystem == FS_LOCAL){
                 File origin = new File(localDirectory + File.separator + fileName);
                 File dest = new File(localDirectory + File.separator + destination);
@@ -237,7 +238,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_MOVE_FILE, 
                             fileName, destination));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }else if(fileSystem == FS_LOCAL){
                 File origin = new File(localDirectory + File.separator + fileName);
                 File dest = new File(localDirectory + File.separator + destination);
@@ -270,7 +271,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_CD_DIR, 
                     newWorkingDirectoryPath));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }else if(fileSystem==FS_LOCAL){
                 if(newWorkingDirectoryPath.split("\\").length == 1){
                     if(newWorkingDirectoryPath.equals("..")){
@@ -298,7 +299,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_LS_DIR));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }else if(fileSystem == FS_LOCAL){
                 File folder = new File(localDirectory);
                 if(!folder.exists())
@@ -327,7 +328,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_CAT_FILE, fileName));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }else if(fileSystem==FS_LOCAL){
                 File file = new File(localDirectory + File.separator + fileName);
 
@@ -357,7 +358,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_RENAME_FILE, 
                             oldName, newName));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }else if(fileSystem==FS_LOCAL){
                 File oldFile = new File(localDirectory + File.separator + oldName);
                 File newFile = new File(localDirectory + File.separator + newName);
@@ -382,7 +383,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_RM_FILE, fileName));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }else if(fileSystem == FS_LOCAL){
                 File file = new File(localDirectory + File.separator + fileName);
                 if(file.delete())
@@ -401,7 +402,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_MK_DIR, directoryName));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }else if(fileSystem == FS_LOCAL){
                 File theDir = new File(localDirectory + File.separator + directoryName);
                 if (theDir.exists()){
@@ -426,7 +427,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DOWNLOAD_FILE, fileName));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }
         } catch(Exception ex) {
             System.out.println(ex);
@@ -439,7 +440,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_UPLOAD_FILE, fileName));
                 client.sendRequestTcp(msg);
-                client.processServerCommand();
+                client.receiveResponseTcp();
             }
         } catch(Exception ex) {
             System.out.println(ex);

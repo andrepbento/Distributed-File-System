@@ -41,7 +41,7 @@ public class Client {
         serverList = new HashMap<>();
         clientList = new ArrayList<>();
         fileSystem = new DistributedFileSystem(this);
-        username = null;
+        username = "NoUser";
         currentConnection = null;
         heartBeatThread = null;
         chatThread = new ChatThreadReceive();
@@ -132,6 +132,7 @@ public class Client {
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
+            processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();
         }
@@ -145,6 +146,7 @@ public class Client {
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
+            processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();
         }
@@ -232,7 +234,7 @@ public class Client {
         for (ClientInfo c : clientList) {
 //            if(c.equals(new ClientInfo(InetAddress.getByName(InetAddress.getLocalHost().getHostAddress())
 //                    , udpSocket.getLocalPort())))
-            if(c.equals(new ClientInfo(InetAddress.getByName("127.0.0.1")
+            if(c.equals(new ClientInfo(InetAddress.getByName("25.10.89.1")
                     , udpSocket.getLocalPort())))
                     return c;
         }
@@ -310,7 +312,7 @@ public class Client {
         
         switch(msg.getMSGCode()){
             case Constants.CODE_LOGOUT_OK:
-                username = null;
+                username = "NoUser";
                 if(heartBeatThread != null) {
                     heartBeatThread.terminate();
                     heartBeatThread = null;
