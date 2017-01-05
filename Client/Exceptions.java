@@ -113,15 +113,75 @@ public class Exceptions{
         }
     }
     
-    static class ErrorRemovingFile extends Exception{
-        public ErrorRemovingFile(){ 
+    static class ErrorRemovingFileOrDirectory extends Exception{
+        public ErrorRemovingFileOrDirectory(){ 
             super("Couldn't remove the file"); 
         }
     }
     
-    static class DirectoryDoesntExist extends Exception{
-        public DirectoryDoesntExist(){ 
-            super("The directory you're trying to use doesn't exist"); 
+    static class ErrorCopyingFile extends Exception{
+        public ErrorCopyingFile(){ 
+            super("Couldn't copy the file"); 
+        }
+    }
+    
+    static class ErrorMovingFile extends Exception{
+        public ErrorMovingFile(){ 
+            super("Couldn't moving the file"); 
+        }
+    }
+    
+    static class ErrorRenamingFile extends Exception{
+        public ErrorRenamingFile(){ 
+            super("Couldn't rename the file"); 
+        }
+    }
+    
+    static class DirectoryOrFileDoesntExist extends Exception{
+        public DirectoryOrFileDoesntExist(){ 
+            super("The directory or file you're trying to use doesn't exist"); 
+        }
+    }
+     
+    static class ErrorDownloadingFile extends Exception{
+        public ErrorDownloadingFile(){ 
+            super("Couldn't download file"); 
+        }
+    }
+    
+    static class ErrorUploadingFile extends Exception{
+        public ErrorUploadingFile(){ 
+            super("Couldn't upload file"); 
+        }
+    }
+    
+    static class ErrorListingDirectory extends Exception{
+        public ErrorListingDirectory(){ 
+            super("Couldn't list the current directory"); 
+        }
+    }
+    
+    static class ErrorShowingFileContent extends Exception{
+        public ErrorShowingFileContent(){ 
+            super("Couldn't show file content"); 
+        }
+    }
+    
+    static class ErrorChangingDirectory extends Exception{
+        public ErrorChangingDirectory(){ 
+            super("Couldn't change directory"); 
+        }
+    }
+
+    static class NotADirectory extends Exception{
+        public NotADirectory(){ 
+            super("Not a directory"); 
+        }
+    }
+    
+    static class NotAfile extends Exception{
+        public NotAfile(){ 
+            super("Not a file"); 
         }
     }
 }

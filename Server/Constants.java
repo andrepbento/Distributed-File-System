@@ -29,6 +29,7 @@ public final class Constants {
     public static final String CMD_MK_DIR = "MKDIR";
     public static final String CMD_DOWNLOAD_FILE = "DOWNLOAD";
     public static final String CMD_UPLOAD_FILE = "UPLOAD";
+    public static final String CMD_RENAME_FILE = "RENAME";
     
     //Client Codes
     // [0 - 99] CMD
@@ -61,7 +62,8 @@ public final class Constants {
     public static final int CODE_SERVER_COPY_ERROR = 1003;
 
     public static final int CODE_SERVER_MKDIR_OK = 1004;
-
+    public static final int CODE_SERVER_MKDIR_ERROR = 1005;
+    
     public static final int CODE_SERVER_RMDIR_OK = 1006;
     public static final int CODE_SERVER_RMDIR_ERROR = 1007;
 
@@ -83,6 +85,7 @@ public final class Constants {
     public static final int CODE_SERVER_CAT_OK = 1018;
     public static final int CODE_SERVER_CAT_ERROR = 1019;
 
-
+    public static final int CODE_SERVER_UPLOAD_OK = 1020;
+    public static final int CODE_SERVER_UPLOAD_ERROR = 1021;
     
 }

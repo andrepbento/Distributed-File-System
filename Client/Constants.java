@@ -28,6 +28,7 @@ public final class Constants {
     public static final String CMD_MK_DIR = "MKDIR";
     public static final String CMD_DOWNLOAD_FILE = "DOWNLOAD";
     public static final String CMD_UPLOAD_FILE = "UPLOAD";
+    public static final String CMD_RENAME_FILE = "RENAME";
     
     public static final String DS = "DS";
     public static final String LOCAL = "LOCAL";
@@ -65,9 +66,10 @@ public final class Constants {
     public static final int CODE_CONNECT_FAILURE = 501;
     public static final int CODE_CONNECT_OK = 502;
     
-        //Client
     public static final int CODE_SERVER_DOESNT_EXIST = 701;
     public static final int CODE_SERVER_ALREADY_CONNECTED = 702;
+    
+    public static final int CODE_DISCONNECT_OK = 999;
     
     public static final int CODE_SERVER_REGISTER_FAILURE = 1000;
     public static final int CODE_SERVER_REGISTER_OK = 1001;
@@ -76,6 +78,7 @@ public final class Constants {
     public static final int CODE_SERVER_COPY_ERROR = 1003;
 
     public static final int CODE_SERVER_MKDIR_OK = 1004;
+    public static final int CODE_SERVER_MKDIR_ERROR = 1005;
 
     public static final int CODE_SERVER_RMDIR_OK = 1006;
     public static final int CODE_SERVER_RMDIR_ERROR = 1007;
@@ -94,8 +97,12 @@ public final class Constants {
 
     public static final int CODE_SERVER_LS_OK = 1016;
     public static final int CODE_SERVER_LS_ERROR = 1017;
-    public static final int CODE_DISCONNECT_OK = 999;
     
+    public static final int CODE_SERVER_CAT_OK = 1018;
+    public static final int CODE_SERVER_CAT_ERROR = 1019;
+    
+    public static final int CODE_SERVER_UPLOAD_OK = 1020;
+    public static final int CODE_SERVER_UPLOAD_ERROR = 1021;
     
         //DirectoryService
     public static final int SENDING_PORT_SD = 9801;
