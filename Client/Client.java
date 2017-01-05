@@ -232,7 +232,7 @@ public class Client {
         for (ClientInfo c : clientList) {
 //            if(c.equals(new ClientInfo(InetAddress.getByName(InetAddress.getLocalHost().getHostAddress())
 //                    , udpSocket.getLocalPort())))
-            if(c.equals(new ClientInfo(InetAddress.getByName("127.0.0.1")
+            if(c.equals(new ClientInfo(InetAddress.getByName("192.168.1.76")
                     , udpSocket.getLocalPort())))
                     return c;
         }
