@@ -21,6 +21,7 @@ import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 
 /**
@@ -268,27 +269,39 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     // cd ..  || cd download || cd c:\download\java
     @Override
     public void changeWorkingDirectory(String newWorkingDirectoryPath) {
+                   
         try{
             if(fileSystem == FS_SERVER){
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_CD_DIR, 
                     newWorkingDirectoryPath));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
-            }else if(fileSystem==FS_LOCAL){
-                if(newWorkingDirectoryPath.split("\\").length == 1){
-                    if(newWorkingDirectoryPath.equals("..")){
-                        System.out.println("IMPLEMENTAR CASO: cd ..");
+            }else if(fileSystem == FS_LOCAL){
+
+                String pattern = Pattern.quote(System.getProperty("file.separator"));
+                String pathParts[] =  localDirectory.split(pattern);
+                String newPath = "";
+                
+                if(newWorkingDirectoryPath.equals("..")){
+                    if(localDirectory.split(File.separator).length == 1){
+                        System.out.println("Can't go back...");
                     }else{
-                        System.out.println("IMPLEMENTAR CASO: cd directoriaXPTO");
+                        for(int i = 0; i < pathParts.length - 1; i++)
+                            newPath += pathParts[i] + File.separator;    
+                        localDirectory = newPath;
                     }
-                }else{
-                    try{
-                        File folder = new File(newWorkingDirectoryPath);
-                        localDirectory = folder.getCanonicalPath();
-                    } catch(IOException ex) {
-                        ex.printStackTrace();
-                    }
-                }
+                 }
+                 else{
+                    File dir = new File(localDirectory + File.separator + newWorkingDirectoryPath);
+                    
+                    if(!dir.exists())
+                        throw new Exceptions.DirectoryOrFileDoesntExist();
+
+                    if(!dir.canRead())
+                        throw new Exceptions.ErrorReadingFileOrDirectory();
+                    
+                    localDirectory = localDirectory + File.separator + newWorkingDirectoryPath;
+                 }
             }
         } catch(Exception ex) {
             System.out.println(ex);

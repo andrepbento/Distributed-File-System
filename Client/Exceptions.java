@@ -184,4 +184,10 @@ public class Exceptions{
             super("Not a file"); 
         }
     }
+    
+    static class ErrorReadingFileOrDirectory extends Exception{
+        public ErrorReadingFileOrDirectory(){ 
+            super("No reading permissions"); 
+        }
+    }
 }
