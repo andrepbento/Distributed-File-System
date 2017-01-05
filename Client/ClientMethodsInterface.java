@@ -30,6 +30,7 @@ public interface ClientMethodsInterface {
     public void changeWorkingDirectory(String newWorkingDirectoryPath);
     public void getWorkingDirContent();
     public void getFileContent(String fileName) throws Exceptions.CmdFailure;
+    public void renameFile(String oldName, String newName);
     public void removeFile(String fileName);
     public void makeDir(String directoryName);
     public void downloadFile(String fileName);

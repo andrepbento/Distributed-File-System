@@ -18,8 +18,6 @@ import java.util.Scanner;
 public class Client {    
     private DatagramSocket udpSocket;
     private DatagramPacket packet; //para receber os pedidos e enviar as respostas
-    private ObjectInputStream oIn;
-    private ObjectOutputStream oOut;
     private InetAddress directoryServiceIp;
     private int directoryServicePort;
     private String line;
@@ -41,7 +39,7 @@ public class Client {
         serverList = new HashMap<>();
         clientList = new ArrayList<>();
         fileSystem = new DistributedFileSystem(this);
-        username = null;
+        username = "NoUser";
         currentConnection = null;
         heartBeatThread = null;
         chatThread = new ChatThreadReceive();
@@ -89,11 +87,12 @@ public class Client {
             msg = new MSG();
             fillMsg(Constants.CLIENT+" "+cmd);
             ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-            oOut = new ObjectOutputStream(bOut);
+            ObjectOutputStream oOut = new ObjectOutputStream(bOut);
             oOut.writeObject(msg);
             oOut.flush();
             packet = new DatagramPacket(bOut.toByteArray(), bOut.toByteArray().length, directoryServiceIp, directoryServicePort);
             udpSocket.send(packet);
+            oOut.close();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -103,12 +102,13 @@ public class Client {
         try {
             packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
             udpSocket.receive(packet);
-            oIn = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
+            ObjectInputStream oIn = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
             
             Object obj = oIn.readObject();
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
+            oIn.close();
         } catch (IOException | ClassNotFoundException ex) {
             ex.printStackTrace();
         }
@@ -116,9 +116,10 @@ public class Client {
     
     public void sendRequestTcp(MSG msg){
         try {
-            oOut = new ObjectOutputStream(currentConnection.getSocket().getOutputStream());
+            ObjectOutputStream oOut = new ObjectOutputStream(currentConnection.getSocket().getOutputStream());
             oOut.writeObject(msg);
             oOut.flush();
+            oOut.close();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -126,12 +127,14 @@ public class Client {
     
     public void receiveResponseTcp() {
         try{
-            oIn = new ObjectInputStream(getCurrentConnection().
+            ObjectInputStream oIn = new ObjectInputStream(getCurrentConnection().
                     getSocket().getInputStream());
             Object obj = oIn.readObject();
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
+            oIn.close();
+            processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();
         }
@@ -139,12 +142,14 @@ public class Client {
     
     public void receiveResponseTcp(String serverName) {
         try{
-            oIn = new ObjectInputStream(getServerConnection(serverName).
+            ObjectInputStream oIn = new ObjectInputStream(getServerConnection(serverName).
                     getSocket().getInputStream());
             Object obj = oIn.readObject();
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
+            oIn.close();
+            processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();
         }
@@ -249,17 +254,68 @@ public class Client {
                 sendRequestUdp(Constants.CMD_DISCONNECT + " " + username + " " + 
                         currentConnection.getServerName());
                 break;
+            case Constants.CODE_SERVER_COPY_OK:
+                System.out.println(msg.getCMDarg(0));
+                break;
+            case Constants.CODE_SERVER_MKDIR_OK:
+                System.out.println(msg.getCMDarg(0));
+                break;
+            case Constants.CODE_SERVER_RMDIR_OK:
+                System.out.println(msg.getCMDarg(0));
+                break;
+            case Constants.CODE_SERVER_RENAME_OK:
+                System.out.println(msg.getCMDarg(0));
+                break;
+            case Constants.CODE_SERVER_MOVE_OK:
+                System.out.println(msg.getCMDarg(0));
+                break;
+            case Constants.CODE_SERVER_DOWNLOAD_OK:
+                System.out.println(msg.getCMDarg(0));
+                break;
+            case Constants.CODE_SERVER_UPLOAD_OK:
+                System.out.println(msg.getCMDarg(0));
+                break;                
+            case Constants.CODE_SERVER_CD_OK:
+                System.out.println(msg.getCMDarg(0));
+                currentConnection.setCurrentPath(msg.getCMDarg(1));
+                break;
+            case Constants.CODE_SERVER_LS_OK:
+                System.out.println(msg.getCMDarg(0));
+                break;                
+            case Constants.CODE_SERVER_CAT_OK:
+                System.out.println(msg.getCMDarg(0));
+                break;       
+            case Constants.CODE_CONNECT_FAILURE: 
+                throw  new Exceptions.ConnectFailure();
+            case Constants.CODE_SERVER_COPY_ERROR: 
+                throw  new Exceptions.ErrorCopyingFile();
+            case Constants.CODE_SERVER_MKDIR_ERROR: 
+                throw  new Exceptions.ErrorCreatingDirectory();
+            case Constants.CODE_SERVER_RMDIR_ERROR: 
+                throw  new Exceptions.ErrorRemovingFileOrDirectory();
+            case Constants.CODE_SERVER_RENAME_ERROR: 
+                throw  new Exceptions.ErrorRenamingFile();
+            case Constants.CODE_SERVER_MOVE_ERROR: 
+                throw  new Exceptions.ErrorMovingFile();
+            case Constants.CODE_SERVER_DOWNLOAD_ERROR: 
+                throw  new Exceptions.ErrorDownloadingFile();
+            case Constants.CODE_SERVER_CD_ERROR: 
+                throw  new Exceptions.ErrorChangingDirectory();
+            case Constants.CODE_SERVER_LS_ERROR: 
+                throw  new Exceptions.ErrorListingDirectory();
+            case Constants.CODE_SERVER_CAT_ERROR: 
+                throw  new Exceptions.ErrorShowingFileContent();             
             default: break;
         }
     }
     
-    public void processDirectoryServiceCommand(){
+    public void processDirectoryServiceCommand() throws Exception{
         if(msg == null)
             return;
         
         switch(msg.getMSGCode()){
             case Constants.CODE_LOGOUT_OK:
-                username = null;
+                username = "NoUser";
                 if(heartBeatThread != null) {
                     heartBeatThread.terminate();
                     heartBeatThread = null;
@@ -277,8 +333,12 @@ public class Client {
                 chatThread.start();
                 System.out.println("Logged in"); 
                 break;
-            case Constants.CODE_REGISTER_OK:  System.out.println("You're now registered"); break;
-            case Constants.CODE_CHAT_OK:  System.out.println("Chat ok"); break;
+            case Constants.CODE_REGISTER_OK:  
+                System.out.println("You're now registered"); 
+                break;
+            case Constants.CODE_CHAT_OK:  
+                System.out.println("Chat ok"); 
+                break;
             case Constants.CODE_LIST_OK:
                 if(msg.getServersList()!= null){
                     if(!msg.getServersList().isEmpty())
@@ -289,35 +349,53 @@ public class Client {
                         updateClientList(msg.getClientList());
                 }
                 break;
+            case Constants.CODE_LIST_FAILURE: 
+                throw new Exceptions.ListFailure();
+            case Constants.CODE_CMD_NOT_RECOGNIZED:  
+                throw new Exceptions.CmdNotRecognized();
+            case Constants.CODE_REGISTER_FAILURE: 
+                throw new Exceptions.RegisterFailure();
+            case Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS: 
+                throw new Exceptions.RegisterClientAlreadyExists();
+            case Constants.CODE_LOGIN_NOT_LOGGED_IN:
+                throw new Exceptions.NotLoggedIn();
+            case Constants.CODE_LOGIN_ALREADY_LOGGED:
+                throw new Exceptions.AlreadyLoggedIn();
+            case Constants.CODE_LOGIN_FAILURE:
+                throw new Exceptions.LoginFailure();
+            case Constants.CODE_CHAT_FAILURE:
+                throw new Exceptions.ChatFailure();
+            case Constants.CODE_CMD_FAILURE: 
+                throw new Exceptions.CmdFailure();
             default: break;
         }
     }
     
-    public void processError(int code) throws Exception{
-            switch(code){
-                case Constants.CODE_CONNECT_FAILURE: 
-                    throw  new Exceptions.ConnectFailure();
-                case Constants.CODE_LIST_FAILURE: 
-                    throw new Exceptions.ListFailure();
-                case Constants.CODE_CMD_NOT_RECOGNIZED:  
-                    throw new Exceptions.CmdNotRecognized();
-                case Constants.CODE_REGISTER_FAILURE: 
-                    throw new Exceptions.RegisterFailure();
-                case Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS: 
-                    throw new Exceptions.RegisterClientAlreadyExists();
-                case Constants.CODE_LOGIN_NOT_LOGGED_IN:
-                    throw new Exceptions.NotLoggedIn();
-                case Constants.CODE_LOGIN_ALREADY_LOGGED:
-                    throw new Exceptions.AlreadyLoggedIn();
-                case Constants.CODE_LOGIN_FAILURE:
-                    throw new Exceptions.LoginFailure();
-                case Constants.CODE_CHAT_FAILURE:
-                    throw new Exceptions.ChatFailure();
-                case Constants.CODE_CMD_FAILURE: 
-                    throw new Exceptions.CmdFailure();
-                default: break;
-            }
-    }
+//    public void processError(int code) throws Exception{
+//            switch(code){
+//                case Constants.CODE_CONNECT_FAILURE: 
+//                    throw  new Exceptions.ConnectFailure();
+//                case Constants.CODE_LIST_FAILURE: 
+//                    throw new Exceptions.ListFailure();
+//                case Constants.CODE_CMD_NOT_RECOGNIZED:  
+//                    throw new Exceptions.CmdNotRecognized();
+//                case Constants.CODE_REGISTER_FAILURE: 
+//                    throw new Exceptions.RegisterFailure();
+//                case Constants.CODE_REGISTER_CLIENT_ALREADY_EXISTS: 
+//                    throw new Exceptions.RegisterClientAlreadyExists();
+//                case Constants.CODE_LOGIN_NOT_LOGGED_IN:
+//                    throw new Exceptions.NotLoggedIn();
+//                case Constants.CODE_LOGIN_ALREADY_LOGGED:
+//                    throw new Exceptions.AlreadyLoggedIn();
+//                case Constants.CODE_LOGIN_FAILURE:
+//                    throw new Exceptions.LoginFailure();
+//                case Constants.CODE_CHAT_FAILURE:
+//                    throw new Exceptions.ChatFailure();
+//                case Constants.CODE_CMD_FAILURE: 
+//                    throw new Exceptions.CmdFailure();
+//                default: break;
+//            }
+//    }
     
     private void processCommand(String line) throws Exceptions.CmdNotRecognized, 
             Exceptions.CmdFailure{
@@ -425,6 +503,12 @@ public class Client {
                     break;
                 }
                 throw new Exceptions.CmdFailure();
+            case Constants.CMD_RENAME_FILE:
+                if(commands.length == 3) {
+                    fileSystem.renameFile(commands[1].trim(), commands[2].trim());
+                    break;
+                }
+                throw new Exceptions.CmdFailure();
             default: throw new Exceptions.CmdNotRecognized();
         }
     }
@@ -435,7 +519,7 @@ public class Client {
                 System.out.print(username + "@" + fileSystem.getCurrentPath() + ">> ");
                 line = new Scanner(System.in).nextLine();
                 processCommand(line);
-                processError(msg.getMSGCode());
+//                processError(msg.getMSGCode());
                 
             } catch(Exception ex) {
                 System.out.println(ex);
