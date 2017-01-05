@@ -250,6 +250,9 @@ public class Client {
             return;
         
         switch(msg.getMSGCode()){
+            case Constants.CODE_CONNECT_OK:
+                System.out.println("Connect Ok");
+                break;
             case Constants.CODE_DISCONNECT_OK:
                 sendRequestUdp(Constants.CMD_DISCONNECT + " " + username + " " + 
                         currentConnection.getServerName());
