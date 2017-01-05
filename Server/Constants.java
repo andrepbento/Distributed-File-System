@@ -22,6 +22,7 @@ public final class Constants {
     public static final String CMD_COPY_FILE = "CP";
     public static final String CMD_MOVE_FILE = "MV";
     public static final String CMD_CD_DIR = "CD";
+    public static final String CMD_DISCONNECT = "DISCONNECT";
     public static final String CMD_LS_DIR = "LS";
     public static final String CMD_CAT_FILE = "CAT";
     public static final String CMD_RM_FILE = "RM";

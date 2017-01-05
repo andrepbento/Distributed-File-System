@@ -145,6 +145,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                             client.getCurrentConnection().setConnected(true);
                             client.sendRequestTcp(msg);
                             client.receiveResponseTcp();
+                            client.getCurrentConnection().setCurrentPath(client.getMsg().getCMDarg(0));
                             fileSystem = FS_SERVER;
                         }else
                             throw new Exceptions.MyClientInfoNotFound();
@@ -165,6 +166,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
             MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DISCONNECT));
             client.sendRequestTcp(msg);
+            client.receiveResponseTcp();
         }
     }
 
@@ -356,8 +358,11 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                         new FileReader(localDirectory + File.separator + fileName));
                 String line;
                 while ((line = br.readLine()) != null) {
-                    text.add(line);
+                    text.add(line+"\n");
                 }
+                System.out.println("File content:\n");
+                for(String lineTmp : text)
+                    System.out.println(lineTmp);
             }
         } catch(Exception ex) {
             System.out.println(ex);
@@ -418,7 +423,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 client.receiveResponseTcp();
             }else if(fileSystem == FS_LOCAL){
                 File theDir = new File(localDirectory + File.separator + directoryName);
-                if (theDir.exists()){
+                if (!theDir.exists()){
                     System.out.println("creating directory: " + directoryName);
                     if(theDir.mkdir()){    
                         System.out.println("DIR " + directoryName + " created");  

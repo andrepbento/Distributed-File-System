@@ -48,6 +48,10 @@ public class Client {
     public InetAddress getDirectoryServiceIp() { 
         return directoryServiceIp; 
     }
+    
+    public MSG getMsg() {
+        return msg;
+    }
 
     public String getUsername() {
         return username;
@@ -116,10 +120,9 @@ public class Client {
     
     public void sendRequestTcp(MSG msg){
         try {
-            ObjectOutputStream oOut = new ObjectOutputStream(currentConnection.getSocket().getOutputStream());
+            ObjectOutputStream oOut = currentConnection.getOutputStream();
             oOut.writeObject(msg);
             oOut.flush();
-            oOut.close();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -127,13 +130,10 @@ public class Client {
     
     public void receiveResponseTcp() {
         try{
-            ObjectInputStream oIn = new ObjectInputStream(getCurrentConnection().
-                    getSocket().getInputStream());
-            Object obj = oIn.readObject();
-            if(obj instanceof MSG){
+            Object obj = getCurrentConnection().getInputStream().readObject();
+            if(obj instanceof MSG) {
                 this.msg = (MSG)obj;
             }
-            oIn.close();
             processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();
@@ -142,13 +142,11 @@ public class Client {
     
     public void receiveResponseTcp(String serverName) {
         try{
-            ObjectInputStream oIn = new ObjectInputStream(getServerConnection(serverName).
-                    getSocket().getInputStream());
+            ObjectInputStream oIn = getServerConnection(serverName).getInputStream();
             Object obj = oIn.readObject();
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
-            oIn.close();
             processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();
@@ -237,7 +235,7 @@ public class Client {
         for (ClientInfo c : clientList) {
 //            if(c.equals(new ClientInfo(InetAddress.getByName(InetAddress.getLocalHost().getHostAddress())
 //                    , udpSocket.getLocalPort())))
-            if(c.equals(new ClientInfo(InetAddress.getByName("25.10.89.1")
+            if(c.equals(new ClientInfo(InetAddress.getByName("127.0.0.1")
                     , udpSocket.getLocalPort())))
                     return c;
         }
@@ -286,8 +284,9 @@ public class Client {
                 System.out.println(msg.getCMDarg(0));
                 break;                
             case Constants.CODE_SERVER_CAT_OK:
-                System.out.println(msg.getCMDarg(0));
-                break;       
+                for(String line : msg.getCMD())
+                    System.out.print(line);
+                break;
             case Constants.CODE_CONNECT_FAILURE: 
                 throw  new Exceptions.ConnectFailure();
             case Constants.CODE_SERVER_COPY_ERROR: 

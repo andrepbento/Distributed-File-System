@@ -1,5 +1,7 @@
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -7,6 +9,8 @@ import java.net.Socket;
 public class ServerConnection {
     private ServerInfo serverInfo;
     private Socket socket;
+    private ObjectInputStream oIs;
+    private ObjectOutputStream oOs;
     private String currentPath;
     private boolean connected;
 
@@ -20,6 +24,9 @@ public class ServerConnection {
     public void createSocket(){
         try {
             socket = new Socket(serverInfo.getIp(), serverInfo.getServerSocketPort());
+            oIs = new ObjectInputStream(socket.getInputStream());
+            oOs = new ObjectOutputStream(socket.getOutputStream());
+            oOs.flush();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -59,6 +66,14 @@ public class ServerConnection {
 
     public void setSocket(Socket socket) {
         this.socket = socket;
+    }
+    
+    public ObjectInputStream getInputStream() {
+        return oIs;
+    }
+    
+    public ObjectOutputStream getOutputStream() {
+        return oOs;
     }
 
     public String getCurrentPath() {

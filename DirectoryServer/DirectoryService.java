@@ -507,7 +507,8 @@ public class DirectoryService extends Thread {
              */
             GetRemoteServerListService listService = new GetRemoteServerListService(serversList);
 
-            System.out.println("Servico GetRemoteFile criado e em execucao ("+listService.getRef().remoteToString()+"...");
+            System.out.println("Servico "+Constants.SERVICE_SERVER_LIST
+                    +" criado e em execucao ("+listService.getRef().remoteToString()+"...");
 
             /*
              * Regista o servico no rmiregistry local para que os clientes possam localiza'-lo, ou seja,

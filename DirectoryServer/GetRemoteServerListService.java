@@ -12,7 +12,7 @@ public class GetRemoteServerListService extends UnicastRemoteObject
     
     private List<ServerInfo> serverList;
     
-    public GetRemoteServerListService(List<ServerInfo> serverList) {
+    public GetRemoteServerListService(List<ServerInfo> serverList) throws RemoteException {
         this.serverList = serverList;
     }
     
