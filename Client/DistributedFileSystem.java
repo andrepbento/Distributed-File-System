@@ -186,40 +186,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     public void list(String type) {
         try {
             if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
-<<<<<<< HEAD
-                client.sendRequestUdp(Constants.CMD_LIST + " " + type);
-                client.receiveResponseUdp();
-                try{
-                    client.processDirectoryServiceCommand();
-                }catch(Exception ex){
-                    System.out.println(ex);
-                }
-            }
-        }catch(Exception ex){
-                    System.out.println(ex);
-        }
-            
-//            try {
-//            if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
-//                String objectUrl = client.getDirectoryServiceIp().getHostAddress();
-//                String registration = "rmi://"+objectUrl+"/"+Constants.SERVICE_SERVER_LIST;
-//                Remote remote = Naming.lookup(registration);
-//                GetRemoteServerListInterface listService = (GetRemoteServerListInterface) remote;
-//
-//                if(type.equals(Constants.CMD_LIST_S))
-//                    client.updateServerList(listService.getServerList());
-//                else if(type.equals(Constants.CMD_LIST_C))
-//                    client.updateClientList(listService.getClientList());
-//                else
-//                    throw new Exceptions.CmdNotRecognized();
-//            } else
-//                throw new Exceptions.CmdFailure();
-//        } catch (NotBoundException | MalformedURLException | RemoteException ex) {
-//            ex.printStackTrace();
-//        } catch (Exceptions.CmdFailure | Exceptions.CmdNotRecognized ex) {
-//            System.out.println(ex);
-//        } 
-=======
+
                 String objectUrl = client.getDirectoryServiceIp().getHostAddress();
                 String registration = "rmi://"+objectUrl+"/"+Constants.SERVICE_SERVER_LIST;
                 Remote remote = Naming.lookup(registration);
@@ -254,7 +221,6 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 System.out.println(ex);
             }
         }
->>>>>>> e2ccd5c8321ae1de6966d5ad9bd9097788c2869b
     }
     
     @Override
