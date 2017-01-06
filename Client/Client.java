@@ -134,7 +134,6 @@ public class Client {
             if(obj instanceof MSG) {
                 this.msg = (MSG)obj;
             }
-            processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();
         }
@@ -147,7 +146,6 @@ public class Client {
             if(obj instanceof MSG){
                 this.msg = (MSG)obj;
             }
-            processServerCommand();
         }catch(Exception ex){
             ex.printStackTrace();
         }
@@ -239,66 +237,6 @@ public class Client {
                     return c;
         }
         return null;
-    }
-        
-    public void processServerCommand() throws Exception{
-        
-        if(msg == null)
-            return;
-        
-        switch(msg.getMSGCode()){
-            case Constants.CODE_SERVER_COPY_OK:
-                System.out.println(msg.getCMDarg(0));
-                break;
-            case Constants.CODE_SERVER_MKDIR_OK:
-                System.out.println(msg.getCMDarg(0));
-                break;
-            case Constants.CODE_SERVER_RMDIR_OK:
-                System.out.println(msg.getCMDarg(0));
-                break;
-            case Constants.CODE_SERVER_RENAME_OK:
-                System.out.println(msg.getCMDarg(0));
-                break;
-            case Constants.CODE_SERVER_MOVE_OK:
-                System.out.println(msg.getCMDarg(0));
-                break;
-            case Constants.CODE_SERVER_DOWNLOAD_OK:
-                System.out.println(msg.getCMDarg(0));
-                break;
-            case Constants.CODE_SERVER_UPLOAD_OK:
-                System.out.println(msg.getCMDarg(0));
-                break;                
-            case Constants.CODE_SERVER_CD_OK:
-                System.out.println(msg.getCMDarg(0));
-                currentConnection.setCurrentPath(msg.getCMDarg(1));
-                break;
-            case Constants.CODE_SERVER_LS_OK:
-                System.out.println(msg.getCMDarg(0));
-                break;                
-            case Constants.CODE_SERVER_CAT_OK:
-                for(String line : msg.getCMD())
-                    System.out.print(line);
-                break;           
-            case Constants.CODE_SERVER_COPY_ERROR: 
-                throw  new Exceptions.ErrorCopyingFile();
-            case Constants.CODE_SERVER_MKDIR_ERROR: 
-                throw  new Exceptions.ErrorCreatingDirectory();
-            case Constants.CODE_SERVER_RMDIR_ERROR: 
-                throw  new Exceptions.ErrorRemovingFileOrDirectory();
-            case Constants.CODE_SERVER_RENAME_ERROR: 
-                throw  new Exceptions.ErrorRenamingFile();
-            case Constants.CODE_SERVER_MOVE_ERROR: 
-                throw  new Exceptions.ErrorMovingFile();
-            case Constants.CODE_SERVER_DOWNLOAD_ERROR: 
-                throw  new Exceptions.ErrorDownloadingFile();
-            case Constants.CODE_SERVER_CD_ERROR: 
-                throw  new Exceptions.ErrorChangingDirectory();
-            case Constants.CODE_SERVER_LS_ERROR: 
-                throw  new Exceptions.ErrorListingDirectory();
-            case Constants.CODE_SERVER_CAT_ERROR: 
-                throw  new Exceptions.ErrorShowingFileContent();             
-            default: break;
-        }
     }
     
     public void processDirectoryServiceCommand() throws Exception{

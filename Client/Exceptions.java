@@ -191,9 +191,15 @@ public class Exceptions{
         }
     }
     
-    static class ErrorReadingFileOrDirectory extends Exception{
-        public ErrorReadingFileOrDirectory(){ 
+    static class ErrorReadingPermissions extends Exception{
+        public ErrorReadingPermissions(){ 
             super("No reading permissions"); 
+        }
+    }
+    
+    static class ErrorWrittingPermissions extends Exception{
+        public ErrorWrittingPermissions(){ 
+            super("No writting permissions"); 
         }
     }
 }
