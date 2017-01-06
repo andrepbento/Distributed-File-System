@@ -31,6 +31,11 @@ public class Client {
     private ServerConnection currentConnection;
     
     public Client(InetAddress directoryServiceIp, int directoryServicePort) throws SocketException{
+        try {
+            System.out.println("Client running on ip: "+InetAddress.getLocalHost().getHostAddress());
+        } catch (UnknownHostException ex) {
+            ex.printStackTrace();
+        }
         udpSocket = new DatagramSocket();
         packet = null;
         msg = null;
@@ -102,6 +107,20 @@ public class Client {
         }
     }
     
+    public void sendRequestUdp(MSG msg){
+        try {
+            ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+            ObjectOutputStream oOut = new ObjectOutputStream(bOut);
+            oOut.writeObject(msg);
+            oOut.flush();
+            packet = new DatagramPacket(bOut.toByteArray(), bOut.toByteArray().length, directoryServiceIp, directoryServicePort);
+            udpSocket.send(packet);
+            oOut.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+    
     public void receiveResponseUdp(){
         try {
             packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
@@ -138,7 +157,7 @@ public class Client {
                 System.out.println("Msg recebido mal");
             }
         }catch(Exception ex){
-            ex.printStackTrace();
+            System.out.println(ex);
         }
     }
     
@@ -153,7 +172,7 @@ public class Client {
                 System.out.println("Msg recebido mal");
             }
         }catch(Exception ex){
-            ex.printStackTrace();
+            System.out.println(ex);
         }
     }
     
@@ -373,6 +392,28 @@ public class Client {
                 if(commands.length == 2) {
                     fileSystem.list(commands[1].trim().toUpperCase());
                     break;
+                }
+                throw new Exceptions.CmdFailure();
+            case Constants.CMD_CHAT:
+                if(2 < commands.length) {
+                    List<String> commandTmp = new ArrayList<>();
+                    commandTmp.add(commands[1]);
+                    int appearences = 0;
+                    String msg = "";
+                    for(String s : Arrays.copyOfRange(commands, 2, commands.length)) {
+                        if(s.contains("\"")) {
+                            appearences++;
+                        }
+                        msg += s+" ";
+                    }
+                    
+                    if(appearences < 2)
+                        throw new Exceptions.CmdFailure();
+                    
+                    commandTmp.add(msg);
+                    
+                    if(commandTmp.size() == 2)
+                        fileSystem.chat(commandTmp.get(0).trim(), commandTmp.get(1));
                 }
                 throw new Exceptions.CmdFailure();
             case Constants.CMD_CONNECT:

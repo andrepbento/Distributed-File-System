@@ -25,11 +25,12 @@ public interface ClientMethodsInterface {
     public void connect(String serverName);
     public void disconnect();
     public void list(String type);
+    public void chat(String to, String msg);
     public void copyFile(String fileName, String destinationPath);
     public void moveFile(String fileName, String destinationPath);
     public void changeWorkingDirectory(String newWorkingDirectoryPath);
     public void getWorkingDirContent();
-    public void getFileContent(String fileName) throws Exceptions.CmdFailure;
+    public void getFileContent(String fileName);
     public void renameFile(String oldName, String newName);
     public void removeFile(String fileName);
     public void makeDir(String directoryName);

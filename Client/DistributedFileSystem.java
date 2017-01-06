@@ -1,18 +1,12 @@
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import java.net.MalformedURLException;
@@ -21,10 +15,7 @@ import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
 
 /**
  *
@@ -39,6 +30,8 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     private String localDirectory;
     private Client client;
     
+    private String pattern;
+    
     public DistributedFileSystem(Client client) {
         fileSystem = FS_DIRECTORY_SERVICE;
         this.client = client;
@@ -48,6 +41,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+        pattern = Pattern.quote(System.getProperty("file.separator"));
     }
 
     public String getCurrentPath() {
@@ -75,7 +69,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 else
                     throw new Exceptions.SwitchingLocalNotPossible();
             }else{ //MUDAR PARA "SERVER_X"
-                if(client.getCurrentConnection().getServerName().equals(to)){
+                if(client.getServerConnection(to) != null){
                     if(client.checkIfImConnected(to)){
                         fileSystem = FS_SERVER;
                         client.setCurrentConnection(client.getServerConnection(to));
@@ -85,7 +79,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                     throw new Exceptions.ServerDoesntExist();
             }
         }catch(Exception ex){
-            ex.printStackTrace();
+            System.out.println(ex);
         }
     }
     
@@ -192,6 +186,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     public void list(String type) {
         try {
             if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
+<<<<<<< HEAD
                 client.sendRequestUdp(Constants.CMD_LIST + " " + type);
                 client.receiveResponseUdp();
                 try{
@@ -224,6 +219,42 @@ public class DistributedFileSystem implements ClientMethodsInterface {
 //        } catch (Exceptions.CmdFailure | Exceptions.CmdNotRecognized ex) {
 //            System.out.println(ex);
 //        } 
+=======
+                String objectUrl = client.getDirectoryServiceIp().getHostAddress();
+                String registration = "rmi://"+objectUrl+"/"+Constants.SERVICE_SERVER_LIST;
+                Remote remote = Naming.lookup(registration);
+                GetRemoteServerListInterface listService = (GetRemoteServerListInterface) remote;
+
+                if(type.equals(Constants.CMD_LIST_S))
+                    client.updateServerList(listService.getServerList());
+                else if(type.equals(Constants.CMD_LIST_C))
+                    client.updateClientList(listService.getClientList());
+                else
+                    throw new Exceptions.CmdNotRecognized();
+            } else
+                throw new Exceptions.CmdFailure();
+        } catch (NotBoundException | MalformedURLException | RemoteException ex) {
+            ex.printStackTrace();
+        } catch (Exceptions.CmdFailure | Exceptions.CmdNotRecognized ex) {
+            System.out.println(ex);
+        }
+    }
+    
+    @Override
+    public void chat(String to, String msg) {
+        if(fileSystem == FS_SERVER || fileSystem == FS_DIRECTORY_SERVICE) {
+            MSG msgToSend = new MSG();
+            msgToSend.getCMD().addAll(Arrays.asList(Constants.CLIENT, Constants.CMD_CHAT, to,
+                    msg));
+            client.sendRequestUdp(msgToSend);
+            client.receiveResponseUdp();
+            try{
+                client.processDirectoryServiceCommand();
+            }catch(Exception ex){
+                System.out.println(ex);
+            }
+        }
+>>>>>>> e2ccd5c8321ae1de6966d5ad9bd9097788c2869b
     }
     
     @Override
@@ -300,7 +331,6 @@ public class DistributedFileSystem implements ClientMethodsInterface {
         }
     }
 
-    // cd ..  || cd download || cd c:\download\java
     @Override
     public void changeWorkingDirectory(String newWorkingDirectoryPath) {
                    
@@ -319,13 +349,11 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                     throw  new Exceptions.ErrorChangingDirectory();
                 
             }else if(fileSystem == FS_LOCAL){
-
-                String pattern = Pattern.quote(System.getProperty("file.separator"));
                 String pathParts[] =  localDirectory.split(pattern);
                 String newPath = "";
                 
                 if(newWorkingDirectoryPath.equals("..")){
-                    if(localDirectory.split(File.separator).length == 1){
+                    if(localDirectory.split(pattern).length == 1){
                         System.out.println("Can't go back...");
                     }else{
                         for(int i = 0; i < pathParts.length - 1; i++)

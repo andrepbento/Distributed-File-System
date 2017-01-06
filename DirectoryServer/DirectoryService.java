@@ -14,7 +14,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -22,8 +21,6 @@ import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * @author andre
@@ -300,7 +297,6 @@ public class DirectoryService extends Thread {
                     sendResponse(new MSG(Constants.CODE_LOGOUT_OK));
                 }
                 break;
-                /*
             case Constants.CMD_LIST: 
                 if(!clientIsLogged(packet.getAddress(), packet.getPort())){
                     System.out.println("\tList FAIL\tNOT LOGGED IN");
@@ -314,40 +310,40 @@ public class DirectoryService extends Thread {
                     if(receivedMSG.getCMDarg(2).equalsIgnoreCase("-s")){
                         System.out.println("\tList Servers OK\tList sended!");
                         MSG serverMSG = new MSG(Constants.CODE_LIST_OK);
-                        serverMSG.setServersList(getServersLogged());
+                        serverMSG.setServersList(getLoggedServers());
                         sendResponse(serverMSG);
                     }
                     else if(receivedMSG.getCMDarg(2).equalsIgnoreCase("-c")){
                         System.out.println("\tList Clients OK\tList sended!");
                         MSG clientMSG = new MSG(Constants.CODE_LIST_OK);
-                        clientMSG.setClientList(getClientsLogged());
+                        clientMSG.setClientList(getLoggedClients());
                         sendResponse(clientMSG);
                     }else
                         sendResponse(new MSG(Constants.CODE_LIST_FAILURE));
                 }
                 break;
-                */
             case Constants.CMD_CHAT:
                 if(!clientIsLogged(packet.getAddress(), packet.getPort())){
                     System.out.println("\tChat FAIL\tNOT LOGGED IN");
                     sendResponse(new MSG(Constants.CODE_LOGIN_NOT_LOGGED_IN));
                     break;
                 }
-                if(receivedMSG.getCMD().size() < 3){
+                if(receivedMSG.getCMD().size() < 4){
                     System.out.println("\tChat FAIL\tCMD WRONG");
                     sendResponse(new MSG(Constants.CODE_CMD_FAILURE));
                 } else {
-                    if(receivedMSG.getCMDarg(2).equals("-all")){
+                    if(receivedMSG.getCMDarg(2).equalsIgnoreCase("-all")){
                         if(clientsChat.sendChatMSGToAll(
                                 getClient(packet.getAddress(), packet.getPort()),
-                                receivedMSG))
+                                receivedMSG.getCMDarg(3)))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else
                             sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
                     } else {
                         if(clientsChat.sendChatMSGToDesignatedClients(
-                                getClient(packet.getAddress(), packet.getPort()), 
-                                receivedMSG))
+                                getClient(packet.getAddress(), packet.getPort()),
+                                receivedMSG.getCMDarg(2),
+                                receivedMSG.getCMDarg(3)))
                             sendResponse(new MSG(Constants.CODE_CHAT_OK));
                         else
                             sendResponse(new MSG(Constants.CODE_CHAT_FAILURE));
@@ -374,8 +370,28 @@ public class DirectoryService extends Thread {
                 sendResponse(new MSG(Constants.CODE_CMD_NOT_RECOGNIZED));
         }
         
-        printClientsList();
+        printClientsList(); 
     }
+    
+    // ?????????????????????????????????????????????????????????????????????????
+    private List<ServerInfo> getLoggedServers() {
+        List<ServerInfo> serversLogged = new ArrayList<>();
+            for(ServerInfo si : serversList)
+                if(si.isLogged())
+                    serversLogged.add(si);
+        return serversLogged;
+    }
+    private List<ClientInfo> getLoggedClients() {
+        List<ClientInfo> clientsLogged = new ArrayList<>();
+        synchronized(clientsList) {
+            for(ClientInfo ci : clientsList)
+                if(ci.isLogged())
+                    clientsLogged.add(ci);
+        }
+        return clientsLogged;
+    }
+    // ?????????????????????????????????????????????????????????????????????????
+    
     
     private void printClientsList(){
         System.out.println("---------- Clients List ----------");
