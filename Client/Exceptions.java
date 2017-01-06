@@ -172,6 +172,12 @@ public class Exceptions{
             super("Couldn't change directory"); 
         }
     }
+    
+    static class ErrorDisconnecting extends Exception{
+        public ErrorDisconnecting(){ 
+            super("Couldn't disconnect from server"); 
+        }
+    }
 
     static class NotADirectory extends Exception{
         public NotADirectory(){ 

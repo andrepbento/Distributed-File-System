@@ -134,21 +134,27 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                     if(!client.checkIfImConnected(serverName)){
                         client.getServerConnection(serverName).createSocket();
                         client.receiveResponseTcp(serverName);  
-                        MSG msg = new MSG();
-                        list(Constants.CMD_LIST_C);
-                        if(client.getMyClientInfo() != null){
-                            msg.setClientList(Arrays.asList(client.getMyClientInfo()));
-                            client.sendRequestUdp(Constants.CMD_CONNECT + " " + 
-                                    client.getUsername() + " " + serverName);
-                            ServerConnection serverC = client.getServerConnection(serverName);
-                            client.setCurrentConnection(serverC);
-                            client.getCurrentConnection().setConnected(true);
-                            client.sendRequestTcp(msg);
-                            client.receiveResponseTcp();
-                            client.getCurrentConnection().setCurrentPath(client.getMsg().getCMDarg(0));
-                            fileSystem = FS_SERVER;
-                        }else
-                            throw new Exceptions.MyClientInfoNotFound();
+                        if(client.getMsg().getMSGCode() == Constants.CODE_CONNECT_OK){
+                            MSG msg = new MSG();
+                            list(Constants.CMD_LIST_C);
+                            if(client.getMyClientInfo() != null){
+                                msg.setClientList(Arrays.asList(client.getMyClientInfo()));
+                                client.sendRequestUdp(Constants.CMD_CONNECT + " " + 
+                                        client.getUsername() + " " + serverName);
+                                ServerConnection serverC = client.getServerConnection(serverName);
+                                client.setCurrentConnection(serverC);
+                                client.getCurrentConnection().setConnected(true);
+                                client.sendRequestTcp(msg);
+                                client.receiveResponseTcp();
+                                client.getCurrentConnection().setCurrentPath(client.getMsg().getCMDarg(0));
+                                fileSystem = FS_SERVER;
+                                System.out.println("Connected to " + serverName);
+                            }
+                            else 
+                                throw new Exceptions.MyClientInfoNotFound();
+                        }
+                        else if (client.getMsg().getMSGCode() == Constants.CODE_CONNECT_FAILURE)
+                            throw new Exceptions.ConnectFailure();
                     }
                     else
                         throw new Exceptions.AlreadyConnected();
@@ -164,9 +170,19 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void disconnect() {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
-            MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DISCONNECT));
-            client.sendRequestTcp(msg);
-            client.receiveResponseTcp();
+            try{
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DISCONNECT));
+                client.sendRequestTcp(msg);
+                client.receiveResponseTcp();
+                if(client.getMsg().getMSGCode() == Constants.CODE_DISCONNECT_OK){
+                    client.sendRequestUdp(Constants.CMD_DISCONNECT + " " + 
+                            client.getUsername() + " " +  client.getCurrentConnection().getServerName());
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_DISCONNECT_ERROR)
+                    throw new Exceptions.ErrorDisconnecting();
+            }catch(Exception ex){
+                System.out.println(ex);
+            }
         }
     }
 

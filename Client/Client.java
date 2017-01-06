@@ -248,13 +248,6 @@ public class Client {
             return;
         
         switch(msg.getMSGCode()){
-            case Constants.CODE_CONNECT_OK:
-                System.out.println("Connect Ok");
-                break;
-            case Constants.CODE_DISCONNECT_OK:
-                sendRequestUdp(Constants.CMD_DISCONNECT + " " + username + " " + 
-                        currentConnection.getServerName());
-                break;
             case Constants.CODE_SERVER_COPY_OK:
                 System.out.println(msg.getCMDarg(0));
                 break;
@@ -286,9 +279,7 @@ public class Client {
             case Constants.CODE_SERVER_CAT_OK:
                 for(String line : msg.getCMD())
                     System.out.print(line);
-                break;
-            case Constants.CODE_CONNECT_FAILURE: 
-                throw  new Exceptions.ConnectFailure();
+                break;           
             case Constants.CODE_SERVER_COPY_ERROR: 
                 throw  new Exceptions.ErrorCopyingFile();
             case Constants.CODE_SERVER_MKDIR_ERROR: 
