@@ -73,6 +73,7 @@ public class ProcessClientRequest extends Thread {
         while (run) {
             try {
                 System.out.println("<------- [ Waiting: " + nome + "] ------->");
+                
                 request = (MSG) (inObj.readObject());
                 
                 if (request == null) {
@@ -98,9 +99,9 @@ public class ProcessClientRequest extends Thread {
                         
                         localDirectory = new File(request.getCMDarg(1));
                         
-                        if(directoryExists(localDirectory)){
+                        //if(directoryExists(localDirectory)){
                             processFileRequest(request.getCMDarg(1));
-                        }
+                        //}
                         break;
                     case Constants.CMD_CD_DIR:
                         System.out.println("RECEIVED A [CD] IN FIRST ARGUMENT");
@@ -120,6 +121,7 @@ public class ProcessClientRequest extends Thread {
                                     processCDRequest(directoryPath+File.separator+File.separator+request.getCMDarg(1));
                                 }
                             }
+                               sendMSG(new MSG(Constants.CODE_SERVER_CD_ERROR,Arrays.asList("DIDNT CHANGE THE DIRECTORY TO ..." + directoryPath,  onlyClientDir(newPath))));
                             System.out.println(newPath);
                         break;
                         case Constants.CMD_DISCONNECT:
@@ -242,7 +244,7 @@ public class ProcessClientRequest extends Thread {
         directoryPath = directoryPath + File.separator + File.separator + requestClientInfo.getClientList().get(0).getUsername();
         new File(directoryPath).mkdir();
                 
-                sendMSG(new MSG(Constants.CODE_CONNECT_OK, Arrays.asList(directoryPath)));
+        sendMSG(new MSG(Constants.CODE_CONNECT_OK, Arrays.asList(onlyClientDir(directoryPath))));
         
         }catch(IOException ex){
             System.out.println("DIDNT RECEIVE THE CORRECT COMANDS CLIENTINFO");
@@ -298,7 +300,7 @@ public class ProcessClientRequest extends Thread {
     public boolean processFileRequest(String filename)
     {        
         OutputStream out;    
-        byte []fileChunck = new byte[1026];
+        byte []fileChunck = new byte[2048];
         int nbytes;
         String requestedCanonicalFilePath = null;
         FileInputStream requestedFileInputStream = null;
@@ -310,12 +312,7 @@ public class ProcessClientRequest extends Thread {
         System.out.println("Sending files...");
                 try{
 
-                    requestedCanonicalFilePath = new File(directoryPath+File.separator + File.separator +filename).getCanonicalPath();
-
-                    if(!requestedCanonicalFilePath.startsWith(directoryPath+File.separator + File.separator)){
-                        sendMSG(new MSG(Constants.CODE_SERVER_DOWNLOAD_ERROR,Arrays.asList("The base directory doenst correspond " + directoryPath +"!")));
-                        return false;
-                    }
+                    requestedCanonicalFilePath = new File(directoryPath+File.separator+filename).getCanonicalPath();
                     
                     sendMSG(new MSG(Constants.CODE_SERVER_DOWNLOAD_OK,Arrays.asList("The base directory will be downloaded -> " + directoryPath +"!")));
                         
@@ -553,7 +550,7 @@ public class ProcessClientRequest extends Thread {
     }
     //VISTO
     public String listar(File directory) {
-        String list = "";
+        String list = "\n";
         if(directory.isDirectory()) {
             System.out.println(directory.getPath());
             String[] subDirectory = directory.list();
