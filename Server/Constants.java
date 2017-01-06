@@ -51,8 +51,8 @@ public final class Constants {
     
     //Server
     public static final int MAX_SIZE = 256;
-    public static final String CMD_RENAME_FILE = "RENAME";
     
+    public static final int CODE_DISCONNECT_ERROR = 998;
     public static final int CODE_DISCONNECT_OK = 999;
     
     public static final int CODE_SERVER_REGISTER_FAILURE = 1000;
