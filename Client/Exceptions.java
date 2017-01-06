@@ -172,6 +172,12 @@ public class Exceptions{
             super("Couldn't change directory"); 
         }
     }
+    
+    static class ErrorDisconnecting extends Exception{
+        public ErrorDisconnecting(){ 
+            super("Couldn't disconnect from server"); 
+        }
+    }
 
     static class NotADirectory extends Exception{
         public NotADirectory(){ 
@@ -185,9 +191,15 @@ public class Exceptions{
         }
     }
     
-    static class ErrorReadingFileOrDirectory extends Exception{
-        public ErrorReadingFileOrDirectory(){ 
+    static class ErrorReadingPermissions extends Exception{
+        public ErrorReadingPermissions(){ 
             super("No reading permissions"); 
+        }
+    }
+    
+    static class ErrorWrittingPermissions extends Exception{
+        public ErrorWrittingPermissions(){ 
+            super("No writting permissions"); 
         }
     }
 }

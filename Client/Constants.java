@@ -69,6 +69,7 @@ public final class Constants {
     public static final int CODE_SERVER_DOESNT_EXIST = 701;
     public static final int CODE_SERVER_ALREADY_CONNECTED = 702;
     
+    public static final int CODE_DISCONNECT_ERROR = 998;
     public static final int CODE_DISCONNECT_OK = 999;
     
     public static final int CODE_SERVER_REGISTER_FAILURE = 1000;

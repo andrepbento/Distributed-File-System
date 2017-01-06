@@ -130,21 +130,27 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                     if(!client.checkIfImConnected(serverName)){
                         client.getServerConnection(serverName).createSocket();
                         client.receiveResponseTcp(serverName);  
-                        MSG msg = new MSG();
-                        list(Constants.CMD_LIST_C);
-                        if(client.getMyClientInfo() != null){
-                            msg.setClientList(Arrays.asList(client.getMyClientInfo()));
-                            client.sendRequestUdp(Constants.CMD_CONNECT + " " + 
-                                    client.getUsername() + " " + serverName);
-                            ServerConnection serverC = client.getServerConnection(serverName);
-                            client.setCurrentConnection(serverC);
-                            client.getCurrentConnection().setConnected(true);
-                            client.sendRequestTcp(msg);
-                            client.receiveResponseTcp();
-                            client.getCurrentConnection().setCurrentPath(client.getMsg().getCMDarg(0));
-                            fileSystem = FS_SERVER;
-                        }else
-                            throw new Exceptions.MyClientInfoNotFound();
+                        if(client.getMsg().getMSGCode() == Constants.CODE_CONNECT_OK){
+                            MSG msg = new MSG();
+                            list(Constants.CMD_LIST_C);
+                            if(client.getMyClientInfo() != null){
+                                msg.setClientList(Arrays.asList(client.getMyClientInfo()));
+                                client.sendRequestUdp(Constants.CMD_CONNECT + " " + 
+                                        client.getUsername() + " " + serverName);
+                                ServerConnection serverC = client.getServerConnection(serverName);
+                                client.setCurrentConnection(serverC);
+                                client.getCurrentConnection().setConnected(true);
+                                client.sendRequestTcp(msg);
+                                client.receiveResponseTcp();
+                                client.getCurrentConnection().setCurrentPath(client.getMsg().getCMDarg(0));
+                                fileSystem = FS_SERVER;
+                                System.out.println("Connected to " + serverName);
+                            }
+                            else 
+                                throw new Exceptions.MyClientInfoNotFound();
+                        }
+                        else if (client.getMsg().getMSGCode() == Constants.CODE_CONNECT_FAILURE)
+                            throw new Exceptions.ConnectFailure();
                     }
                     else
                         throw new Exceptions.AlreadyConnected();
@@ -160,9 +166,19 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     @Override
     public void disconnect() {
         if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
-            MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DISCONNECT));
-            client.sendRequestTcp(msg);
-            client.receiveResponseTcp();
+            try{
+                MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DISCONNECT));
+                client.sendRequestTcp(msg);
+                client.receiveResponseTcp();
+                if(client.getMsg().getMSGCode() == Constants.CODE_DISCONNECT_OK){
+                    client.sendRequestUdp(Constants.CMD_DISCONNECT + " " + 
+                            client.getUsername() + " " +  client.getCurrentConnection().getServerName());
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_DISCONNECT_ERROR)
+                    throw new Exceptions.ErrorDisconnecting();
+            }catch(Exception ex){
+                System.out.println(ex);
+            }
         }
     }
 
@@ -170,6 +186,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     public void list(String type) {
         try {
             if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
+
                 String objectUrl = client.getDirectoryServiceIp().getHostAddress();
                 String registration = "rmi://"+objectUrl+"/"+Constants.SERVICE_SERVER_LIST;
                 Remote remote = Naming.lookup(registration);
@@ -214,6 +231,11 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                         fileName, destination));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_COPY_OK)
+                    System.out.println(client.getMsg().getCMDarg(0));
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_COPY_ERROR)
+                    throw new Exceptions.ErrorCopyingFile();
+                
             }else if(fileSystem == FS_LOCAL){
                 File origin = new File(localDirectory + File.separator + fileName);
                 File dest = new File(localDirectory + File.separator + destination);
@@ -245,6 +267,12 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                             fileName, destination));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_MOVE_OK)
+                    System.out.println(client.getMsg().getCMDarg(0));
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_MOVE_ERROR)
+                    throw  new Exceptions.ErrorMovingFile();
+                
             }else if(fileSystem == FS_LOCAL){
                 File origin = new File(localDirectory + File.separator + fileName);
                 File dest = new File(localDirectory + File.separator + destination);
@@ -278,6 +306,14 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                     newWorkingDirectoryPath));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_CD_OK){
+                    System.out.println(client.getMsg().getCMDarg(0));
+                    client.getCurrentConnection().setCurrentPath(client.getMsg().getCMDarg(1));
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_CD_ERROR)
+                    throw  new Exceptions.ErrorChangingDirectory();
+                
             }else if(fileSystem == FS_LOCAL){
                 String pathParts[] =  localDirectory.split(pattern);
                 String newPath = "";
@@ -298,7 +334,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                         throw new Exceptions.DirectoryOrFileDoesntExist();
 
                     if(!dir.canRead())
-                        throw new Exceptions.ErrorReadingFileOrDirectory();
+                        throw new Exceptions.ErrorReadingPermissions();
                     
                     localDirectory = localDirectory + File.separator + newWorkingDirectoryPath;
                  }
@@ -315,6 +351,13 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_LS_DIR));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_LS_OK){
+                    System.out.println(client.getMsg().getCMDarg(0));
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_LS_ERROR)
+                    throw  new Exceptions.ErrorListingDirectory();
+                
             }else if(fileSystem == FS_LOCAL){
                 File folder = new File(localDirectory);
                 if(!folder.exists())
@@ -344,6 +387,14 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_CAT_FILE, fileName));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_CAT_OK){
+                    for(String line : msg.getCMD())
+                        System.out.print(line);
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_CAT_ERROR)
+                    throw  new Exceptions.ErrorShowingFileContent();
+                
             }else if(fileSystem==FS_LOCAL){
                 File file = new File(localDirectory + File.separator + fileName);
 
@@ -377,6 +428,13 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                             oldName, newName));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_RENAME_OK){
+                    System.out.println(client.getMsg().getCMDarg(0));
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_RENAME_ERROR)
+                    throw  new Exceptions.ErrorRenamingFile();
+                
             }else if(fileSystem==FS_LOCAL){
                 File oldFile = new File(localDirectory + File.separator + oldName);
                 File newFile = new File(localDirectory + File.separator + newName);
@@ -402,6 +460,13 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_RM_FILE, fileName));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_RMDIR_OK){
+                    System.out.println(client.getMsg().getCMDarg(0));
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_RMDIR_ERROR)
+                    throw  new Exceptions.ErrorRemovingFileOrDirectory();
+                
             }else if(fileSystem == FS_LOCAL){
                 File file = new File(localDirectory + File.separator + fileName);
                 if(file.delete())
@@ -421,6 +486,13 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_MK_DIR, directoryName));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_MKDIR_OK){
+                    System.out.println(client.getMsg().getCMDarg(0));
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_MKDIR_ERROR)
+                    throw  new Exceptions.ErrorCreatingDirectory();
+                
             }else if(fileSystem == FS_LOCAL){
                 File theDir = new File(localDirectory + File.separator + directoryName);
                 if (!theDir.exists()){
@@ -446,6 +518,13 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_DOWNLOAD_FILE, fileName));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_DOWNLOAD_OK){
+                    new DownloadThread(client.getCurrentConnection(), 
+                            localDirectory, fileName).start();
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_DOWNLOAD_ERROR)
+                    throw  new Exceptions.ErrorDownloadingFile();
             }
         } catch(Exception ex) {
             System.out.println(ex);
@@ -459,6 +538,13 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 MSG msg = new MSG(0, Arrays.asList(Constants.CMD_UPLOAD_FILE, fileName));
                 client.sendRequestTcp(msg);
                 client.receiveResponseTcp();
+                
+                if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_UPLOAD_OK){
+                    new UploadThread(client.getCurrentConnection(), 
+                            localDirectory, fileName).start();
+                }
+                else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_UPLOAD_ERROR)
+                    throw  new Exceptions.ErrorUploadingFile();
             }
         } catch(Exception ex) {
             System.out.println(ex);
