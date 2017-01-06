@@ -26,7 +26,6 @@ public class ServerConnection {
             socket = new Socket(serverInfo.getIp(), serverInfo.getServerSocketPort());
             oIs = new ObjectInputStream(socket.getInputStream());
             oOs = new ObjectOutputStream(socket.getOutputStream());
-            oOs.flush();
         } catch (IOException ex) {
             ex.printStackTrace();
         }

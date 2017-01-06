@@ -192,24 +192,38 @@ public class DistributedFileSystem implements ClientMethodsInterface {
     public void list(String type) {
         try {
             if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
-                String objectUrl = client.getDirectoryServiceIp().getHostAddress();
-                String registration = "rmi://"+objectUrl+"/"+Constants.SERVICE_SERVER_LIST;
-                Remote remote = Naming.lookup(registration);
-                GetRemoteServerListInterface listService = (GetRemoteServerListInterface) remote;
-
-                if(type.equals(Constants.CMD_LIST_S))
-                    client.updateServerList(listService.getServerList());
-                else if(type.equals(Constants.CMD_LIST_C))
-                    client.updateClientList(listService.getClientList());
-                else
-                    throw new Exceptions.CmdNotRecognized();
-            } else
-                throw new Exceptions.CmdFailure();
-        } catch (NotBoundException | MalformedURLException | RemoteException ex) {
-            ex.printStackTrace();
-        } catch (Exceptions.CmdFailure | Exceptions.CmdNotRecognized ex) {
-            System.out.println(ex);
-        } 
+                client.sendRequestUdp(Constants.CMD_LIST + " " + type);
+                client.receiveResponseUdp();
+                try{
+                    client.processDirectoryServiceCommand();
+                }catch(Exception ex){
+                    System.out.println(ex);
+                }
+            }
+        }catch(Exception ex){
+                    System.out.println(ex);
+        }
+            
+//            try {
+//            if(fileSystem == FS_DIRECTORY_SERVICE || fileSystem == FS_SERVER){
+//                String objectUrl = client.getDirectoryServiceIp().getHostAddress();
+//                String registration = "rmi://"+objectUrl+"/"+Constants.SERVICE_SERVER_LIST;
+//                Remote remote = Naming.lookup(registration);
+//                GetRemoteServerListInterface listService = (GetRemoteServerListInterface) remote;
+//
+//                if(type.equals(Constants.CMD_LIST_S))
+//                    client.updateServerList(listService.getServerList());
+//                else if(type.equals(Constants.CMD_LIST_C))
+//                    client.updateClientList(listService.getClientList());
+//                else
+//                    throw new Exceptions.CmdNotRecognized();
+//            } else
+//                throw new Exceptions.CmdFailure();
+//        } catch (NotBoundException | MalformedURLException | RemoteException ex) {
+//            ex.printStackTrace();
+//        } catch (Exceptions.CmdFailure | Exceptions.CmdNotRecognized ex) {
+//            System.out.println(ex);
+//        } 
     }
     
     @Override
@@ -298,8 +312,8 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 client.receiveResponseTcp();
                 
                 if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_CD_OK){
-                    System.out.println(msg.getCMDarg(0));
-                    client.getCurrentConnection().setCurrentPath(msg.getCMDarg(1));
+                    System.out.println(client.getMsg().getCMDarg(0));
+                    client.getCurrentConnection().setCurrentPath(client.getMsg().getCMDarg(1));
                 }
                 else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_CD_ERROR)
                     throw  new Exceptions.ErrorChangingDirectory();
@@ -345,7 +359,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 client.receiveResponseTcp();
                 
                 if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_LS_OK){
-                    System.out.println(msg.getCMDarg(0));
+                    System.out.println(client.getMsg().getCMDarg(0));
                 }
                 else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_LS_ERROR)
                     throw  new Exceptions.ErrorListingDirectory();
@@ -422,7 +436,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 client.receiveResponseTcp();
                 
                 if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_RENAME_OK){
-                    System.out.println(msg.getCMDarg(0));
+                    System.out.println(client.getMsg().getCMDarg(0));
                 }
                 else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_RENAME_ERROR)
                     throw  new Exceptions.ErrorRenamingFile();
@@ -454,7 +468,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 client.receiveResponseTcp();
                 
                 if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_RMDIR_OK){
-                    System.out.println(msg.getCMDarg(0));
+                    System.out.println(client.getMsg().getCMDarg(0));
                 }
                 else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_RMDIR_ERROR)
                     throw  new Exceptions.ErrorRemovingFileOrDirectory();
@@ -480,7 +494,7 @@ public class DistributedFileSystem implements ClientMethodsInterface {
                 client.receiveResponseTcp();
                 
                 if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_MKDIR_OK){
-                    System.out.println(msg.getCMDarg(0));
+                    System.out.println(client.getMsg().getCMDarg(0));
                 }
                 else if(client.getMsg().getMSGCode() == Constants.CODE_SERVER_MKDIR_ERROR)
                     throw  new Exceptions.ErrorCreatingDirectory();
