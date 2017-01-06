@@ -175,27 +175,26 @@ public class Client {
         }
     }
 
-    private void updateClientList(List<ClientInfo> list){ 
+    public void updateClientList(List<ClientInfo> list){ 
         clientList.clear();
-        clientList = list; 
+        clientList = list;
+        
+        System.out.println(listClients());
     }
     
-    private void listClients(){
-        String list = "Client List Updated\n---------------------------------------\n";
-        for (ClientInfo c : clientList) {
+    private String listClients(){
+        String list = "Logged Clients"+"\n---------------------------------------\n";
+        for (ClientInfo c : clientList) 
             list += c.getUsername() + "\n";
-        }
         
-        list += "---------------------------------------\n\n";
-        System.out.print(list);
-    } 
+        list += "\n---------------------------------------\n";
+        return list;
+    }
     
     public void updateServerList(List<ServerInfo> list){
-        for (ServerInfo item : list) {
-            if(!serverList.containsKey(item.getName())){
+        for (ServerInfo item : list) 
+            if(!serverList.containsKey(item.getName()))
                 serverList.put(item.getName(), new ServerConnection(item, null));
-            }
-        }
         
         for (Map.Entry<String, ServerConnection> entry : serverList.entrySet()) {
             String serverName = entry.getKey();
@@ -216,7 +215,7 @@ public class Client {
     }
     
     private String listServers(){
-        String list = "\tServer List Updated\n";
+        String list = "\tServer List\n";
         list += ("---------------------------------------\n"
                 + "Server Name \tState (Connected/Not Connected\n");
         for (Map.Entry<String, ServerConnection> entry : serverList.entrySet()) {
@@ -332,6 +331,7 @@ public class Client {
             case Constants.CODE_CHAT_OK:  
                 System.out.println("Chat ok"); 
                 break;
+                /*
             case Constants.CODE_LIST_OK:
                 if(msg.getServersList()!= null){
                     if(!msg.getServersList().isEmpty())
@@ -344,6 +344,7 @@ public class Client {
                 break;
             case Constants.CODE_LIST_FAILURE: 
                 throw new Exceptions.ListFailure();
+                */
             case Constants.CODE_CMD_NOT_RECOGNIZED:  
                 throw new Exceptions.CmdNotRecognized();
             case Constants.CODE_REGISTER_FAILURE: 

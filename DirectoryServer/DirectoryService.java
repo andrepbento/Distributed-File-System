@@ -14,12 +14,16 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.rmi.AccessException;
+import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author andre
@@ -52,9 +56,12 @@ public class DirectoryService extends Thread {
         
         new HeartbeatThreadReceive().start();
         
-        if((r = launchRemoteService()) == null) {
+        try {
+            if((r = launchRemoteService()) == null)
+                r.unbind(Constants.SERVICE_SERVER_LIST);
+        } catch(Exception e) {
             System.out.println("Launch remote service failure!");
-            return;
+            System.exit(0);
         }
         
         printClientsList();
@@ -197,14 +204,6 @@ public class DirectoryService extends Thread {
         return false;
     }
     
-    private List<ServerInfo> getServersLogged() {
-        List<ServerInfo> serversLogged = new ArrayList<>();
-        for(ServerInfo si : getServersList())
-            if(si.isLogged())
-                serversLogged.add(si);
-        return serversLogged;
-    }
-    
     /* IMPLEMENTAR ISTO MAIS TARDE CASO SE QUEIRA FAZER SAVE/LOAD AOS SERVIDORES [REGISTO_SERVIDORES]
     public static final List<Server> loadServerList(){
         List<Server> serverList = new ArrayList<>();
@@ -301,6 +300,7 @@ public class DirectoryService extends Thread {
                     sendResponse(new MSG(Constants.CODE_LOGOUT_OK));
                 }
                 break;
+                /*
             case Constants.CMD_LIST: 
                 if(!clientIsLogged(packet.getAddress(), packet.getPort())){
                     System.out.println("\tList FAIL\tNOT LOGGED IN");
@@ -326,6 +326,7 @@ public class DirectoryService extends Thread {
                         sendResponse(new MSG(Constants.CODE_LIST_FAILURE));
                 }
                 break;
+                */
             case Constants.CMD_CHAT:
                 if(!clientIsLogged(packet.getAddress(), packet.getPort())){
                     System.out.println("\tChat FAIL\tNOT LOGGED IN");
@@ -427,15 +428,7 @@ public class DirectoryService extends Thread {
                 return true;
         return false;
     }
-    
-    private List<ClientInfo> getClientsLogged() {
-        List<ClientInfo> clientsLogged = new ArrayList<>();
-        for(ClientInfo ci : getClientsList())
-            if(ci.isLogged())
-                clientsLogged.add(ci);
-        return clientsLogged;
-    }
-    
+
     private boolean logInClient(String username, String password, 
             InetAddress clientAddress, int clientPort){
         ClientInfo c = getClient(username);
@@ -491,45 +484,38 @@ public class DirectoryService extends Thread {
     
     // JAVA RMI
     
-    Registry launchRemoteService() {
-        try {
-            Registry r;
-
-            try{
-                r = LocateRegistry.createRegistry(1099); //Se o servico nao estiver lancado ainda
-            }catch(RemoteException e){
-                System.out.println("Excepcao: " + e);
-                r = LocateRegistry.getRegistry(1099); //caso esteja, faz get do servico existente
-            }
-
-            /*
-             * Cria o servico
-             */
-            GetRemoteServerListService listService = new GetRemoteServerListService(serversList);
-
-            System.out.println("Servico "+Constants.SERVICE_SERVER_LIST
-                    +" criado e em execucao ("+listService.getRef().remoteToString()+"...");
-
-            /*
-             * Regista o servico no rmiregistry local para que os clientes possam localiza'-lo, ou seja,
-             * obter a sua referencia remota (endereco IP, porto de escuta, etc.).
-             */
-
-            r.bind(Constants.SERVICE_SERVER_LIST, listService);
-
-            System.out.println("Servico "+Constants.SERVICE_SERVER_LIST
-                    +" registado no registry...");
-            
-            return r;
+    Registry launchRemoteService() throws RemoteException {
+        Registry r = null;
+        
+        try{
+            r = LocateRegistry.createRegistry(1099); //Se o servico nao estiver lancado ainda
         }catch(RemoteException e){
-            System.out.println("Erro remoto - " + e);
-            System.exit(1);
-        }catch(Exception e){
-            System.out.println("Erro - " + e);
-            System.exit(1);
+            System.out.println("Excepcao: " + e);
+            r = LocateRegistry.getRegistry(1099); //caso esteja, faz get do servico existente
         }
         
-        return null;
+        /*
+        * Cria o servico
+        */
+        GetRemoteServerListService listService = new GetRemoteServerListService(serversList, clientsList);
+        
+        System.out.println("Servico "+Constants.SERVICE_SERVER_LIST
+                +" criado e em execucao ("+listService.getRef().remoteToString()+"...");
+        
+        /*
+        * Regista o servico no rmiregistry local para que os clientes possam localiza'-lo, ou seja,
+        * obter a sua referencia remota (endereco IP, porto de escuta, etc.).
+        */
+        try{
+            r.bind(Constants.SERVICE_SERVER_LIST, listService);
+        }catch(AlreadyBoundException ex){
+            System.out.println("Excepcao: " + ex);
+        }                    
+        
+        System.out.println("Servico "+Constants.SERVICE_SERVER_LIST
+                +" registado no registry...");
+        
+        return r;
     }
     
     /*
