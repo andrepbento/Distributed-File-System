@@ -138,7 +138,7 @@ public class Server{
 
                 // LANCAR A THREAD PARA TRATAR DO CLIENTE X
                 //PRIMEIRO CRIA A FUNÇÃO QUE VAI ATENDER ESSE CLIENTE
-                ProcessClientRequest newClient = new ProcessClientRequest(serverSocket, clientSocket, localDirectory);
+                ProcessClientRequest newClient = new ProcessClientRequest(serverSocket, clientSocket, localDirectory, name);
 
                 //GUARDA A FUNÇÃO E O SOCKET PARA ESSE CLIENTE
                 this.listClientsPRequest.add(newClient);
