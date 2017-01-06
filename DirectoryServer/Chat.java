@@ -8,7 +8,6 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.Arrays;
 
-
 /**
  *
  * @author andre
@@ -26,9 +25,9 @@ public class Chat {
         this.packet = null;
     }
     
-    private void prepareChatMSG(String username, MSG msg) {
+    private void prepareChatMSG(String username, String msg) {
         MSG msgToSend = new MSG();
-        msgToSend.setCMD(Arrays.asList(username, msg.getCMDarg(3)));
+        msgToSend.setCMD(Arrays.asList(username, msg));
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream(Constants.MAX_SIZE);
         try{
             ObjectOutputStream os = new ObjectOutputStream(new
@@ -46,7 +45,7 @@ public class Chat {
         System.out.println("Reply MSG sended!");
     }
     
-    public boolean sendChatMSGToAll(ClientInfo from, MSG msg) {
+    public boolean sendChatMSGToAll(ClientInfo from, String msg) {
         prepareChatMSG(from.getUsername(), msg);
         try {
             for(ClientInfo ci : DirectoryService.clientsList) {
@@ -62,9 +61,9 @@ public class Chat {
         return true;
     }
     
-    public boolean sendChatMSGToDesignatedClients(ClientInfo from, MSG msg) {
+    public boolean sendChatMSGToDesignatedClients(ClientInfo from, String to, String msg) {
         prepareChatMSG(from.getUsername(), msg);
-        String[] clientsUsernames = msg.getCMDarg(2).split(",");
+        String[] clientsUsernames = to.split(",");
         for(int i = 0; i < clientsUsernames.length; i++) {
             for(ClientInfo ci : DirectoryService.clientsList) {
                 if(!from.equals(ci) && ci.isLogged() && ci.getUsername().equals(clientsUsernames[i])){
