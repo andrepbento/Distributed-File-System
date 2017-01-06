@@ -1,5 +1,4 @@
 
-
 public final class Constants {
     
     private Constants(){ }
@@ -15,6 +14,7 @@ public final class Constants {
     public static final String CMD_LIST = "LIST";
     public static final String CMD_LIST_C = "-C";
     public static final String CMD_LIST_S = "-S";
+    public static final String CMD_CHAT = "CHAT";
     
     public static final String CMD_CONNECT = "CONNECT";
     public static final String CMD_DISCONNECT = "DISCONNECT";
