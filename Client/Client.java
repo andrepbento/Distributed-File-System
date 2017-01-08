@@ -30,6 +30,9 @@ public class Client {
     private List<ClientInfo> clientList;
     private ServerConnection currentConnection;
     
+    ObjectOutputStream oOut;
+    ObjectInputStream oIn;
+    
     public Client(InetAddress directoryServiceIp, int directoryServicePort) throws SocketException{
         try {
             System.out.println("Client running on ip: "+InetAddress.getLocalHost().getHostAddress());
@@ -96,7 +99,7 @@ public class Client {
             msg = new MSG();
             fillMsg(Constants.CLIENT+" "+cmd);
             ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-            ObjectOutputStream oOut = new ObjectOutputStream(bOut);
+            oOut = new ObjectOutputStream(bOut);
             oOut.writeObject(msg);
             oOut.flush();
             packet = new DatagramPacket(bOut.toByteArray(), bOut.toByteArray().length, directoryServiceIp, directoryServicePort);
@@ -110,7 +113,7 @@ public class Client {
     public void sendRequestUdp(MSG msg){
         try {
             ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-            ObjectOutputStream oOut = new ObjectOutputStream(bOut);
+            oOut = new ObjectOutputStream(bOut);
             oOut.writeObject(msg);
             oOut.flush();
             packet = new DatagramPacket(bOut.toByteArray(), bOut.toByteArray().length, directoryServiceIp, directoryServicePort);
@@ -125,7 +128,7 @@ public class Client {
         try {
             packet = new DatagramPacket(new byte[Constants.MAX_SIZE], Constants.MAX_SIZE);
             udpSocket.receive(packet);
-            ObjectInputStream oIn = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
+            oIn = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
             
             Object obj = oIn.readObject();
             if(obj instanceof MSG){
@@ -139,7 +142,7 @@ public class Client {
     
     public void sendRequestTcp(MSG msg){
         try {
-            ObjectOutputStream oOut = currentConnection.getOutputStream();
+            oOut = currentConnection.getOutputStream();
             oOut.writeObject(msg);
             oOut.flush();
         } catch (IOException ex) {
@@ -257,7 +260,7 @@ public class Client {
         for (ClientInfo c : clientList) {
 //            if(c.equals(new ClientInfo(InetAddress.getByName(InetAddress.getLocalHost().getHostAddress())
 //                    , udpSocket.getLocalPort())))
-            if(c.equals(new ClientInfo(InetAddress.getByName("25.10.89.1")
+            if(c.equals(new ClientInfo(InetAddress.getByName("10.65.128.149")
                     , udpSocket.getLocalPort())))
                     return c;
         }
