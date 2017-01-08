@@ -48,7 +48,12 @@ public class DownloadThread extends Thread{
             fileChunck = new byte[Constants.MAX_SIZE];
             inputStream = currentConnection.getSocket().getInputStream();
             
-            while((nbytes = inputStream.read(fileChunck)) > 0){                    
+            while((nbytes = inputStream.read(fileChunck)) > 0){ 
+                
+                if("f".equals(new String(fileChunck))){
+                    break;
+                }
+                
                 localFileOutputStream.write(fileChunck, 0, nbytes);
                 System.out.println("Received block n. " + ++blockCounter + " with " + nbytes + " bytes.");
                 System.out.println("Added " + nbytes + " bytes to file " + filePath+ ".");                    
